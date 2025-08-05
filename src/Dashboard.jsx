@@ -76,11 +76,100 @@ function Dashboard() {
 }
 
 function NewBooking() {
+  const [form, setForm] = useState({
+    pickup_country: "SE",
+    pickup_postal: "",
+    pickup_place: "",
+    delivery_country: "DE",
+    delivery_postal: "",
+    delivery_place: "",
+    weight: "",
+    ldm: "",
+    transport_type: "road"
+  });
+
+  const [result, setResult] = useState(null);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async () => {
+    try {
+      const response = await fetch("https://easyfreightbooking-api.onrender.com/calculate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form)
+      });
+      const data = await response.json();
+      setResult(data);
+    } catch (err) {
+      console.error("API error:", err);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="bg-white border rounded-xl shadow-md p-8 w-full max-w-xl">
-        <h1 className="text-2xl font-bold mb-4">🚛 Skapa ny bokning</h1>
-        <p className="text-gray-500">(Formuläret kommer här...)</p>
+        <h1 className="text-2xl font-bold mb-6">🚛 Skapa ny bokning</h1>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label>Pickup Country</label>
+            <input name="pickup_country" value={form.pickup_country} onChange={handleChange} className="input" />
+          </div>
+          <div>
+            <label>Pickup Postal</label>
+            <input name="pickup_postal" value={form.pickup_postal} onChange={handleChange} className="input" />
+          </div>
+          <div>
+            <label>Pickup Place</label>
+            <input name="pickup_place" value={form.pickup_place} onChange={handleChange} className="input" />
+          </div>
+          <div>
+            <label>Delivery Country</label>
+            <input name="delivery_country" value={form.delivery_country} onChange={handleChange} className="input" />
+          </div>
+          <div>
+            <label>Delivery Postal</label>
+            <input name="delivery_postal" value={form.delivery_postal} onChange={handleChange} className="input" />
+          </div>
+          <div>
+            <label>Delivery Place</label>
+            <input name="delivery_place" value={form.delivery_place} onChange={handleChange} className="input" />
+          </div>
+          <div>
+            <label>Weight (kg)</label>
+            <input name="weight" type="number" value={form.weight} onChange={handleChange} className="input" />
+          </div>
+          <div>
+            <label>LDM</label>
+            <input name="ldm" type="number" value={form.ldm} onChange={handleChange} className="input" />
+          </div>
+          <div className="md:col-span-2">
+            <label>Transport Type</label>
+            <select name="transport_type" value={form.transport_type} onChange={handleChange} className="input">
+              <option value="road">Road</option>
+              <option value="intermodal">Intermodal</option>
+              <option value="rail">Rail</option>
+              <option value="ocean">Ocean</option>
+            </select>
+          </div>
+        </div>
+
+        <button
+          onClick={handleSubmit}
+          className="mt-6 w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+        >
+          Beräkna pris
+        </button>
+
+        {result && (
+          <div className="mt-6 bg-gray-100 p-4 rounded">
+            <pre>{JSON.stringify(result, null, 2)}</pre>
+          </div>
+        )}
       </div>
     </div>
   );
