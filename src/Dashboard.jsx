@@ -21,39 +21,16 @@ export default function Dashboard() {
       });
   }, []);
 
-  return (
-    <div className="flex min-h-screen bg-gray-100">
-      <Sidebar />
-      <main className="flex-1 p-6">
-        <h1 className="text-2xl font-bold mb-6">Mina Bokningar</h1>
+return (
+  <div className="p-6">
+    <h1 className="text-2xl font-bold text-green-700 mb-4">✅ React är igång!</h1>
+    <p>user_id: {userId}</p>
+    <p>Antal bokningar: {bookings.length}</p>
+    <pre>{JSON.stringify(bookings, null, 2)}</pre>
+  </div>
+);
 
-        {bookings.length === 0 && (
-          <p className="text-gray-600">Inga bokningar att visa just nu.</p>
-        )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {bookings.map((booking) => (
-            <div key={booking.id} className="bg-white p-4 rounded shadow">
-              <div className="mb-2">
-                <h2 className="font-semibold text-lg">
-                  #{booking.id} – {booking.transport_type}
-                </h2>
-                <p className="text-sm text-gray-600">
-                  {booking.pickup_country} → {booking.delivery_country}
-                </p>
-              </div>
-              <div className="text-sm">
-                <p><strong>Datum:</strong> {new Date(booking.created_at).toLocaleDateString()}</p>
-                <p><strong>Gods:</strong> {booking.ldm} LDM, {booking.weight} kg</p>
-                <p><strong>Pris:</strong> {booking.total_price} kr</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </main>
-    </div>
-  );
-}
 
 // Sidebar-komponent
 export function Sidebar() {
