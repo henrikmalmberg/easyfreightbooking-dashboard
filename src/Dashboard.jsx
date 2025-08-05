@@ -21,20 +21,9 @@ export default function Dashboard() {
       });
   }, []);
 
-return (
-  <div className="p-6">
-    <h1 className="text-2xl font-bold text-green-700 mb-4">✅ React är igång!</h1>
-    <p>user_id: {userId}</p>
-    <p>Antal bokningar: {bookings.length}</p>
-    <pre>{JSON.stringify(bookings, null, 2)}</pre>
-  </div>
-);
 
-
-
-// Sidebar-komponent
-export function Sidebar() {
-  return (
+  // ✅ Flytta Sidebar hit som en inre komponent
+  const Sidebar = () => (
     <aside className="w-64 bg-white border-r p-4 hidden md:block">
       <h2 className="text-xl font-semibold mb-4">EasyFreight</h2>
       <ul className="space-y-2">
@@ -43,5 +32,17 @@ export function Sidebar() {
         <li><a href="/account" className="text-gray-700">Mitt konto</a></li>
       </ul>
     </aside>
+  );
+
+  return (
+    <div className="flex min-h-screen bg-gray-100">
+      <Sidebar />
+      <main className="flex-1 p-6">
+        <h1 className="text-2xl font-bold text-green-700 mb-4">✅ React är igång!</h1>
+        <p>user_id: {userId}</p>
+        <p>Antal bokningar: {bookings.length}</p>
+        <pre>{JSON.stringify(bookings, null, 2)}</pre>
+      </main>
+    </div>
   );
 }
