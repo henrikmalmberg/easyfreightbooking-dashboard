@@ -158,8 +158,53 @@ function NewBooking() {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">🚛 Skapa ny bokning</h1>
-      {/* Resten av formuläret är oförändrat */}
-      {/* ... */}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label className="block text-sm font-medium">Från – Land</label>
+          <select name="pickup_country" value={form.pickup_country} onChange={handleChange} className="mt-1 w-full border rounded p-2">
+            {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium">Från – Postnummer</label>
+          <input name="pickup_postal" value={form.pickup_postal} onChange={handleChange} className="mt-1 w-full border rounded p-2" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium">Till – Land</label>
+          <select name="delivery_country" value={form.delivery_country} onChange={handleChange} className="mt-1 w-full border rounded p-2">
+            {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium">Till – Postnummer</label>
+          <input name="delivery_postal" value={form.delivery_postal} onChange={handleChange} className="mt-1 w-full border rounded p-2" />
+        </div>
+      </div>
+
+      <div className="mb-4">
+        <h2 className="font-semibold mb-2">Gods</h2>
+        {goods.map((item, index) => (
+          <div key={index} className="grid grid-cols-6 gap-2 mb-2 items-end">
+            <select name="type" value={item.type} onChange={(e) => handleGoodsChange(index, e)} className="col-span-1 border p-2 rounded">
+              <option value="Colli">Colli</option>
+              <option value="Pallet">Pallet</option>
+              <option value="FTL">Full Trailer Load (13.6 m)</option>
+            </select>
+            <input name="weight" placeholder="kg" value={item.weight} onChange={(e) => handleGoodsChange(index, e)} className="border p-2 rounded" />
+            <input name="length" placeholder="cm" value={item.length} onChange={(e) => handleGoodsChange(index, e)} className="border p-2 rounded" />
+            <input name="width" placeholder="cm" value={item.width} onChange={(e) => handleGoodsChange(index, e)} className="border p-2 rounded" />
+            <input name="height" placeholder="cm" value={item.height} onChange={(e) => handleGoodsChange(index, e)} className="border p-2 rounded" />
+            <div className="flex items-center">
+              <input name="quantity" type="number" min="1" value={item.quantity} onChange={(e) => handleGoodsChange(index, e)} className="border p-2 rounded w-full" />
+              {goods.length > 1 && (
+                <button onClick={() => removeGoodsRow(index)} className="ml-2 text-red-600">✕</button>
+              )}
+            </div>
+          </div>
+        ))}
+        <button onClick={addGoodsRow} className="mt-2 text-sm text-blue-600">+ Lägg till godsrad</button>
+      </div>
 
       <button
         onClick={handleSubmit}
@@ -193,7 +238,7 @@ export function Layout({ children }) {
 function Sidebar() {
   return (
     <aside className="w-64 bg-white border-r p-6 shadow-md">
-      <h2 className="text-xl font-bold mb-6">EasyFreight</h2>
+      <h2 className="text-xl font-bold mb-6">EasyFreightBooking</h2>
       <nav className="space-y-3">
         <Link to="/dashboard" className="block text-blue-600 font-medium hover:text-blue-800">
           Dashboard
