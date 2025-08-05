@@ -1,8 +1,6 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
-import { Dashboard } from "./Dashboard";
-import { NewBooking } from "./NewBooking";
-import { Layout } from "./Layout";
+
 
 export default function App() {
   return (
