@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Sidebar } from "@/components/ui/sidebar";
 
 export default function Dashboard() {
   const [bookings, setBookings] = useState([]);
