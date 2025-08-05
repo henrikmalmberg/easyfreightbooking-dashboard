@@ -1,3 +1,4 @@
+import React from "react";
 import { useEffect, useState } from "react";
 import { LogOut, Menu, User } from "lucide-react";
 
