@@ -1,5 +1,19 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from "react-router-dom";
+
+const COUNTRIES = [
+  { code: "SE", name: "Sweden" }, { code: "DK", name: "Denmark" }, { code: "NO", name: "Norway" },
+  { code: "FI", name: "Finland" }, { code: "DE", name: "Germany" }, { code: "FR", name: "France" },
+  { code: "NL", name: "Netherlands" }, { code: "BE", name: "Belgium" }, { code: "IT", name: "Italy" },
+  { code: "ES", name: "Spain" }, { code: "PT", name: "Portugal" }, { code: "AT", name: "Austria" },
+  { code: "PL", name: "Poland" }, { code: "CZ", name: "Czech Republic" }, { code: "SK", name: "Slovakia" },
+  { code: "HU", name: "Hungary" }, { code: "RO", name: "Romania" }, { code: "BG", name: "Bulgaria" },
+  { code: "HR", name: "Croatia" }, { code: "SI", name: "Slovenia" }, { code: "GR", name: "Greece" },
+  { code: "IE", name: "Ireland" }, { code: "EE", name: "Estonia" }, { code: "LV", name: "Latvia" },
+  { code: "LT", name: "Lithuania" }, { code: "LU", name: "Luxembourg" }, { code: "CY", name: "Cyprus" },
+  { code: "MT", name: "Malta" }, { code: "UK", name: "United Kingdom" }, { code: "CH", name: "Switzerland" },
+  { code: "UA", name: "Ukraine" }
+];
 
 export default function App() {
   return (
@@ -71,19 +85,31 @@ function Dashboard() {
   );
 }
 
+function ResultCard({ transport, onSelect }) {
+  return (
+    <div
+      onClick={() => onSelect(transport)}
+      className="cursor-pointer border rounded-lg p-4 mb-3 bg-white hover:bg-blue-50 shadow-sm transition"
+    >
+      <div className="flex items-center justify-between">
+        <div className="font-semibold text-lg">{transport.mode}</div>
+        <div className="text-blue-600 font-bold text-lg">{transport.total_price} kr</div>
+      </div>
+      <div className="text-sm text-gray-600 mt-1">
+        {transport.ldm} LDM, {transport.weight} kg<br />
+        {transport.days} dagar • {transport.kilometers} km
+      </div>
+    </div>
+  );
+}
+
 function NewBooking() {
   const [goods, setGoods] = React.useState([
     { type: "Colli", weight: "", length: "", width: "", height: "", quantity: 1 }
   ]);
-
-  const [form, setForm] = React.useState({
-    pickup_country: "SE",
-    pickup_postal: "",
-    delivery_country: "SE",
-    delivery_postal: ""
-  });
-
+  const [form, setForm] = React.useState({ pickup_country: "SE", pickup_postal: "", delivery_country: "SE", delivery_postal: "" });
   const [result, setResult] = React.useState(null);
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -94,34 +120,39 @@ function NewBooking() {
     const { name, value } = e.target;
     const updated = [...goods];
     updated[index][name] = value;
+    if (name === "type") {
+      if (value === "FTL") {
+        updated[index]["weight"] = "24000";
+        updated[index]["length"] = "1360";
+      } else if (value === "Pallet") {
+        updated[index]["length"] = "120";
+        updated[index]["width"] = "80";
+      }
+    }
     setGoods(updated);
   };
 
-  const addGoodsRow = () => {
-    setGoods([...goods, { type: "Colli", weight: "", length: "", width: "", height: "", quantity: 1 }]);
-  };
-
-  const removeGoodsRow = (index) => {
-    const updated = goods.filter((_, i) => i !== index);
-    setGoods(updated);
-  };
+  const addGoodsRow = () => setGoods([...goods, { type: "Colli", weight: "", length: "", width: "", height: "", quantity: 1 }]);
+  const removeGoodsRow = (index) => setGoods(goods.filter((_, i) => i !== index));
 
   const handleSubmit = async () => {
-    const payload = {
-      ...form,
-      goods
-    };
     try {
       const response = await fetch("https://easyfreightbooking-api.onrender.com/calculate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({ ...form, goods })
       });
       const data = await response.json();
       setResult(data);
     } catch (err) {
       console.error("API error:", err);
     }
+  };
+
+  const handleSelect = (option) => {
+    // Spara det valda alternativet i state eller navigate till bokningssteg
+    console.log("Selected option:", option);
+    navigate("/new-booking"); // Placeholder för att gå vidare till nästa steg
   };
 
   return (
@@ -132,24 +163,26 @@ function NewBooking() {
         <div>
           <label className="block mb-1">From – Country</label>
           <select name="pickup_country" value={form.pickup_country} onChange={handleChange} className="input w-full border rounded px-3 py-2">
-            <option value="SE">SE - Sweden</option>
-            <option value="DE">DE - Germany</option>
+            {COUNTRIES.map((c) => (
+              <option key={c.code} value={c.code}>{c.code} - {c.name}</option>
+            ))}
           </select>
         </div>
         <div>
           <label className="block mb-1">From – Postal Code</label>
-          <input name="pickup_postal" value={form.pickup_postal} onChange={handleChange} className="input w-full border rounded px-3 py-2" placeholder="211 34" />
+          <input name="pickup_postal" value={form.pickup_postal} onChange={handleChange} className="input w-full border rounded px-3 py-2" placeholder="211 34" autoComplete="postal-code" />
         </div>
         <div>
           <label className="block mb-1">To – Country</label>
           <select name="delivery_country" value={form.delivery_country} onChange={handleChange} className="input w-full border rounded px-3 py-2">
-            <option value="SE">SE - Sweden</option>
-            <option value="DE">DE - Germany</option>
+            {COUNTRIES.map((c) => (
+              <option key={c.code} value={c.code}>{c.code} - {c.name}</option>
+            ))}
           </select>
         </div>
         <div>
           <label className="block mb-1">To – Postal Code</label>
-          <input name="delivery_postal" value={form.delivery_postal} onChange={handleChange} className="input w-full border rounded px-3 py-2" placeholder="Zip code" />
+          <input name="delivery_postal" value={form.delivery_postal} onChange={handleChange} className="input w-full border rounded px-3 py-2" placeholder="Zip code" autoComplete="postal-code" />
         </div>
       </div>
 
@@ -160,6 +193,7 @@ function NewBooking() {
             <select name="type" value={item.type} onChange={(e) => handleGoodsChange(index, e)} className="border rounded px-2 py-1">
               <option value="Colli">Coll</option>
               <option value="Pallet">Pallet</option>
+              <option value="FTL">Full Trailer Load (13.6 m)</option>
             </select>
             <input name="weight" placeholder="Weight (kg)" value={item.weight} onChange={(e) => handleGoodsChange(index, e)} className="border rounded px-2 py-1" />
             <input name="length" placeholder="Length (cm)" value={item.length} onChange={(e) => handleGoodsChange(index, e)} className="border rounded px-2 py-1" />
@@ -184,7 +218,9 @@ function NewBooking() {
       {result && (
         <div className="mt-6 bg-white border rounded p-4 shadow-sm">
           <h2 className="font-semibold mb-2">Prisuppskattning</h2>
-          <pre className="text-sm text-gray-700">{JSON.stringify(result, null, 2)}</pre>
+          {result.options?.map((opt, i) => (
+            <ResultCard key={i} transport={opt} onSelect={handleSelect} />
+          ))}
         </div>
       )}
     </div>
