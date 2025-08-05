@@ -2,7 +2,13 @@ import { useEffect, useState } from "react";
 
 export default function Dashboard() {
   const [bookings, setBookings] = useState([]);
-  const userId = window.loggedInUserId || 1;
+  let userId = 1;
+try {
+  userId = window.loggedInUserId || 1;
+} catch (e) {
+  console.warn("window.loggedInUserId not found – using fallback ID 1");
+}
+
 
   useEffect(() => {
     fetch(`https://easyfreightbooking-api.onrender.com/my_bookings?user_id=${userId}`)
