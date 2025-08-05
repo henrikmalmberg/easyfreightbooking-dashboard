@@ -1,3 +1,4 @@
+import React from "react";
 import { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import { LogOut, Menu, User, Plus } from "lucide-react";
