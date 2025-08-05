@@ -1,8 +1,20 @@
-import React from "react";
 import { useEffect, useState } from "react";
-import { LogOut, Menu, User } from "lucide-react";
+import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import { LogOut, Menu, User, Plus } from "lucide-react";
 
-export default function Dashboard() {
+export default function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/new-booking" element={<NewBooking />} />
+      </Routes>
+    </Router>
+  );
+}
+
+function Dashboard() {
   const [bookings, setBookings] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   let userId = 1;
@@ -15,13 +27,8 @@ export default function Dashboard() {
   useEffect(() => {
     fetch(`https://easyfreightbooking-api.onrender.com/my_bookings?user_id=${userId}`)
       .then((res) => res.json())
-      .then((data) => {
-        console.log("Bookings fetched:", data);
-        setBookings(data);
-      })
-      .catch((err) => {
-        console.error("Failed to fetch bookings", err);
-      });
+      .then((data) => setBookings(data))
+      .catch((err) => console.error("Failed to fetch bookings", err));
   }, []);
 
   return (
@@ -31,10 +38,12 @@ export default function Dashboard() {
       <main className="flex-1 p-6">
         <div className="hidden md:flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold">📦 Mina Bokningar</h1>
-          <button className="inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm bg-gray-200 hover:bg-gray-300">
-            <User className="w-4 h-4" />
-            Användare #{userId}
-          </button>
+          <Link
+            to="/new-booking"
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm bg-blue-600 text-white hover:bg-blue-700"
+          >
+            <Plus className="w-4 h-4" /> Ny bokning
+          </Link>
         </div>
 
         {bookings.length === 0 ? (
@@ -66,6 +75,17 @@ export default function Dashboard() {
   );
 }
 
+function NewBooking() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="bg-white border rounded-xl shadow-md p-8 w-full max-w-xl">
+        <h1 className="text-2xl font-bold mb-4">🚛 Skapa ny bokning</h1>
+        <p className="text-gray-500">(Formuläret kommer här...)</p>
+      </div>
+    </div>
+  );
+}
+
 function MobileHeader({ onToggleSidebar, userId }) {
   return (
     <div className="md:hidden flex items-center justify-between bg-white border-b p-4 shadow-sm">
@@ -89,15 +109,15 @@ function Sidebar({ isOpen }) {
     >
       <h2 className="text-xl font-bold mb-6">EasyFreight</h2>
       <nav className="space-y-3">
-        <a href="/dashboard" className="block text-blue-600 font-medium">
+        <Link to="/dashboard" className="block text-blue-600 font-medium">
           Dashboard
-        </a>
-        <a href="/bookings" className="block text-gray-700 hover:text-blue-600">
-          Mina bokningar
-        </a>
-        <a href="/account" className="block text-gray-700 hover:text-blue-600">
+        </Link>
+        <Link to="/new-booking" className="block text-gray-700 hover:text-blue-600">
+          Ny bokning
+        </Link>
+        <Link to="/account" className="block text-gray-700 hover:text-blue-600">
           Mitt konto
-        </a>
+        </Link>
         <hr className="my-4" />
         <button className="flex items-center text-sm text-gray-500 hover:text-red-500">
           <LogOut className="w-4 h-4 mr-2" /> Logga ut
