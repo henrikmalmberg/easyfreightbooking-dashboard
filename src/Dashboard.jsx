@@ -1,19 +1,23 @@
 import React from "react";
-import { useEffect, useState } from "react";
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
-import { LogOut, Menu, User, Plus } from "lucide-react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Dashboard } from "./Dashboard";
+import { NewBooking } from "./NewBooking";
+import { Layout } from "./Layout";
 
 export default function App() {
   return (
     <Router>
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/new-booking" element={<NewBooking />} />
-      </Routes>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/new-booking" element={<NewBooking />} />
+        </Routes>
+      </Layout>
     </Router>
   );
 }
+
 
 function Dashboard() {
   const [bookings, setBookings] = useState([]);
