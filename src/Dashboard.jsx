@@ -227,26 +227,33 @@ function NewBooking() {
 }
 
 export function Layout({ children }) {
+  const [showSidebar, setShowSidebar] = React.useState(false);
+
   return (
     <div className="flex min-h-screen bg-gray-100">
-      <Sidebar />
-      <main className="flex-1 p-8 overflow-auto">{children}</main>
+      <div className={`fixed inset-0 bg-black bg-opacity-30 z-40 md:hidden ${showSidebar ? "block" : "hidden"}`} onClick={() => setShowSidebar(false)}></div>
+      <Sidebar visible={showSidebar} onClose={() => setShowSidebar(false)} />
+
+      <main className="flex-1 p-4 md:p-8 overflow-auto w-full">
+        <button className="md:hidden mb-4 text-blue-600" onClick={() => setShowSidebar(true)}>☰ Meny</button>
+        {children}
+      </main>
     </div>
   );
 }
 
-function Sidebar() {
+function Sidebar({ visible, onClose }) {
   return (
-    <aside className="w-64 bg-white border-r p-6 shadow-md">
+    <aside className={`fixed md:relative z-50 md:z-auto transform top-0 left-0 h-full w-64 bg-white border-r p-6 shadow-md transition-transform duration-300 ${visible ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}>
       <h2 className="text-xl font-bold mb-6">EasyFreightBooking</h2>
       <nav className="space-y-3">
-        <Link to="/dashboard" className="block text-blue-600 font-medium hover:text-blue-800">
+        <Link to="/dashboard" className="block text-blue-600 font-medium hover:text-blue-800" onClick={onClose}>
           Dashboard
         </Link>
-        <Link to="/new-booking" className="block text-gray-700 hover:text-blue-600">
+        <Link to="/new-booking" className="block text-gray-700 hover:text-blue-600" onClick={onClose}>
           Ny bokning
         </Link>
-        <Link to="/account" className="block text-gray-700 hover:text-blue-600">
+        <Link to="/account" className="block text-gray-700 hover:text-blue-600" onClick={onClose}>
           Mitt konto
         </Link>
         <hr className="my-4" />
