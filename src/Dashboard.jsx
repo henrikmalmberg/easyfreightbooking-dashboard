@@ -405,11 +405,11 @@ const handleSubmit = async () => {
           </div>
         ))}
 		<div className="text-sm mt-2">
-  <strong>Chargeable Weight:</strong>{" "}
+  <strong>Chargeable weight:</strong>{" "}
   <span className={chargeableWeight > 25160 ? "text-red-600 font-semibold" : "text-green-600 font-semibold"}>
     {Math.round(chargeableWeight)} kg
   </span>
-  {" "} kg
+  {" "}
 </div>
 
         <button onClick={addGoodsRow} className="mt-2 text-sm text-blue-600">+ Lägg till godsrad</button>
