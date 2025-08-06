@@ -161,7 +161,7 @@ const handleSubmit = async () => {
 
     const data = await response.json();
     console.log("API Response:", data);
-    setResponse(data); // använd useState för att visa resultatet i UI
+    setResult(data); // använd useState för att visa resultatet i UI
   } catch (error) {
     console.error("API error:", error);
   }
