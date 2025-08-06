@@ -79,8 +79,7 @@ function Dashboard() {
   );
 }
 
-function ResultCard({ transport, onSelect }) {
-  // Ikoner per transportslag
+function ResultCard({ transport, selectedOption, onSelect }) {
   const icons = {
     road_freight: "🚛",
     ocean_freight: "🚢",
@@ -88,13 +87,23 @@ function ResultCard({ transport, onSelect }) {
     conventional_rail: "🚆"
   };
 
+  const isSelected = selectedOption?.mode === transport.mode;
+
   return (
     <div
       onClick={() => onSelect(transport)}
-      className="cursor-pointer border rounded-lg p-4 mb-3 bg-white hover:bg-blue-50 shadow-sm transition"
+      className={`cursor-pointer border rounded-lg p-4 mb-3 bg-white shadow-sm transition ${
+        isSelected ? "border-blue-600 bg-blue-50" : "hover:bg-blue-50"
+      }`}
     >
       <div className="flex items-center justify-between mb-2">
-        <div className="font-semibold text-lg capitalize flex items-center gap-2">
+        <div className="flex items-center gap-2 text-lg font-semibold capitalize">
+          <input
+            type="radio"
+            name="selectedTransport"
+            checked={isSelected}
+            onChange={() => onSelect(transport)}
+          />
           <span>{icons[transport.mode]}</span>
           {transport.mode.replace("_", " ")}
         </div>
@@ -107,6 +116,7 @@ function ResultCard({ transport, onSelect }) {
     </div>
   );
 }
+
 
 
 function NewBooking() {
@@ -156,6 +166,10 @@ const handleSubmit = async () => {
 
     chargeable_weight: 1000,
   };
+  
+  const [selectedOption, setSelectedOption] = React.useState(null);
+
+  
   
 try {
   const response = await fetch("https://easyfreightbooking-api.onrender.com/calculate", {
@@ -253,15 +267,27 @@ try {
     <ResultCard
       key={i}
       transport={{
-        mode,
+        mode: mode.replace("_", " "),
+        emoji: mode === "road_freight" ? "🚛" : mode === "ocean_freight" ? "🚢" : "🚆",
         total_price: `${data.total_price_eur} EUR`,
-        days: `${data.transit_time_days[0]}–${data.transit_time_days[1]}`,
-        earliest_pickup: data.earliest_pickup_date || "–"
+        pickup_date: data.earliest_pickup_date,
+        days: `${data.transit_time_days[0]}–${data.transit_time_days[1]}`
       }}
-      onSelect={handleSelect}
+      selectedOption={selectedOption}
+      setSelectedOption={setSelectedOption}
     />
   ) : null
 )}
+
+    <button
+      onClick={() => handleSelect(selectedOption)}
+      disabled={!selectedOption}
+      className={`mt-4 w-full py-2 rounded font-medium text-white shadow ${
+        selectedOption ? "bg-green-600 hover:bg-green-700" : "bg-gray-300 cursor-not-allowed"
+      }`}
+    >
+      Proceed with selected option
+    </button>
 
   </div>
 )}
