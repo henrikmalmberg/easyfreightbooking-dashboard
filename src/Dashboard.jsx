@@ -125,6 +125,7 @@ function NewBooking() {
   ]);
   const [form, setForm] = React.useState({ pickup_country: "SE", pickup_postal: "", delivery_country: "SE", delivery_postal: "" });
   const [result, setResult] = React.useState(null);
+    const [selectedOption, setSelectedOption] = React.useState(null); // ✅ FLYTTAD HIT
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -167,7 +168,6 @@ const handleSubmit = async () => {
     chargeable_weight: 1000,
   };
   
-  const [selectedOption, setSelectedOption] = React.useState(null);
 
   
   
