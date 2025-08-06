@@ -255,16 +255,7 @@ const chargeableWeight = calculateChargeableWeight(goods);
     }
     setGoods(updated);
   };
-
-  const addGoodsRow = () => setGoods([...goods, { type: "Colli", weight: "", length: "", width: "", height: "", quantity: 1 }]);
-  const removeGoodsRow = (index) => setGoods(goods.filter((_, i) => i !== index));
-
-const handleSubmit = async () => {
-  if (!cityFrom?.coordinate || !cityTo?.coordinate) {
-    alert("Kunde inte hämta koordinater. Kontrollera postnummer.");
-    return;
-  }
-function calculateChargeableWeight(goods) {
+const calculateChargeableWeight = (goods) => {
   return goods.reduce((total, item) => {
     const weight = parseFloat(item.weight) || 0;
     const length = parseFloat(item.length) / 100 || 0;
@@ -277,7 +268,16 @@ function calculateChargeableWeight(goods) {
 
     return total + chargeable * quantity;
   }, 0);
-}
+};
+
+  const addGoodsRow = () => setGoods([...goods, { type: "Colli", weight: "", length: "", width: "", height: "", quantity: 1 }]);
+  const removeGoodsRow = (index) => setGoods(goods.filter((_, i) => i !== index));
+
+const handleSubmit = async () => {
+  if (!cityFrom?.coordinate || !cityTo?.coordinate) {
+    alert("Kunde inte hämta koordinater. Kontrollera postnummer.");
+    return;
+  }
 
   const payload = {
     pickup_coordinate: cityFrom.coordinate,
@@ -462,7 +462,7 @@ function calculateChargeableWeight(goods) {
 function Sidebar({ visible, onClose }) {
   return (
     <aside className={`fixed md:relative z-50 md:z-auto transform top-0 left-0 h-full w-64 bg-white border-r p-6 shadow-md transition-transform duration-300 ${visible ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}>
-<Link to="/dashboard" onClick={onClose} className="block mb-6">
+<Link to="/" onClick={onClose} className="block mb-6">
   <img src="/logo.png" alt="EasyFreightBooking Logo" className="h-18 w-auto" />
 </Link>
 
