@@ -174,10 +174,10 @@ function ResultCard({ transport, selectedOption, onSelect }) {
 function NewBooking() {
 
 
-  const [goods, setGoods] = React.useState([
+	const [goods, setGoods] = React.useState([
     { type: "Colli", weight: "", length: "", width: "", height: "", quantity: 1 }
   ]);
-  const [form, setForm] = React.useState({ pickup_country: "SE", pickup_postal: "", delivery_country: "SE", delivery_postal: "" });
+	const [form, setForm] = React.useState({ pickup_country: "SE", pickup_postal: "", delivery_country: "SE", delivery_postal: "" });
   const [result, setResult] = React.useState(null);
     const [selectedOption, setSelectedOption] = React.useState(null); // ✅ FLYTTAD HIT
   const navigate = useNavigate();
@@ -268,7 +268,7 @@ try {
       name="pickup_postal"
       value={form.pickup_postal}
       onChange={handleChange}
-      className="mt-1 border rounded p-2 w-[120px]" // 👈 Gör input mindre
+      className="mt-1 border rounded p-2 w-[120px]" 
     />
     <span className="text-sm text-gray-600 mt-1">{cityFrom}</span> {/* 👈 Validering */}
   </div>
