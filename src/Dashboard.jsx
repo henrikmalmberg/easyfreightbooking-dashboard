@@ -222,7 +222,8 @@ function NewBooking() {
   };
 	const cityFrom = useCityLookup(form.pickup_postal, form.pickup_country);
 	const cityTo = useCityLookup(form.delivery_postal, form.delivery_country);
-  const handleGoodsChange = (index, e) => {
+	
+	const handleGoodsChange = (index, e) => {
     const { name, value } = e.target;
     const updated = [...goods];
     updated[index][name] = value;
@@ -303,10 +304,10 @@ try {
 		value={form.pickup_postal}
 		onChange={handleChange}
 		className="mt-1 border rounded p-2 w-[120px]" 
-    />
-{cityTo && (
-  <span className="text-sm text-gray-600 mt-1">{cityFrom}</span>
-)}
+		/>
+		
+		<span className="text-sm text-gray-600 mt-1">{cityFrom}</span>
+		
 
 
   </div>
