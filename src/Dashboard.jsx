@@ -80,22 +80,34 @@ function Dashboard() {
 }
 
 function ResultCard({ transport, onSelect }) {
+  // Ikoner per transportslag
+  const icons = {
+    road_freight: "🚛",
+    ocean_freight: "🚢",
+    intermodal_rail: "🚚🚆",
+    conventional_rail: "🚆"
+  };
+
   return (
     <div
       onClick={() => onSelect(transport)}
       className="cursor-pointer border rounded-lg p-4 mb-3 bg-white hover:bg-blue-50 shadow-sm transition"
     >
-      <div className="flex items-center justify-between">
-        <div className="font-semibold text-lg">{transport.mode}</div>
-        <div className="text-blue-600 font-bold text-lg">{transport.total_price} kr</div>
+      <div className="flex items-center justify-between mb-2">
+        <div className="font-semibold text-lg capitalize flex items-center gap-2">
+          <span>{icons[transport.mode]}</span>
+          {transport.mode.replace("_", " ")}
+        </div>
+        <div className="text-blue-600 font-bold text-lg">{transport.total_price}</div>
       </div>
-      <div className="text-sm text-gray-600 mt-1">
-        {transport.ldm} LDM, {transport.weight} kg<br />
-        {transport.days} dagar • {transport.kilometers} km
+      <div className="text-sm text-gray-600 space-y-1">
+        <div><strong>Earliest pickup:</strong> {transport.earliest_pickup}</div>
+        <div><strong>Transit time:</strong> {transport.days} dagar</div>
       </div>
     </div>
   );
 }
+
 
 function NewBooking() {
   const [goods, setGoods] = React.useState([
@@ -235,23 +247,22 @@ try {
 
 {result && (
   <div className="mt-6 bg-white border rounded p-4 shadow-sm">
-    <h2 className="font-semibold mb-2">Prisuppskattning</h2>
-    {Object.entries(result).map(([mode, data], i) =>
-      data.status === "success" ? (
-        <ResultCard
-          key={i}
-          transport={{
-            mode,
-            total_price: `${data.total_price_eur} EUR`,
-            ldm: data.ldm || "–",
-            weight: data.weight || "–",
-            days: `${data.transit_time_days[0]}–${data.transit_time_days[1]}`,
-            kilometers: data.distance_km
-          }}
-          onSelect={handleSelect}
-        />
-      ) : null
-    )}
+    <h2 className="font-semibold mb-2">Avaliable freight options</h2>
+{Object.entries(result).map(([mode, data], i) =>
+  data.status === "success" ? (
+    <ResultCard
+      key={i}
+      transport={{
+        mode,
+        total_price: `${data.total_price_eur} EUR`,
+        days: `${data.transit_time_days[0]}–${data.transit_time_days[1]}`,
+        earliest_pickup: data.earliest_pickup_date || "–"
+      }}
+      onSelect={handleSelect}
+    />
+  ) : null
+)}
+
   </div>
 )}
 
