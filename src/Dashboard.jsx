@@ -14,11 +14,7 @@ const COUNTRIES = [
   { code: "UK", name: "United Kingdom" }, { code: "CH", name: "Switzerland" },
   { code: "UA", name: "Ukraine" }
 ];
-function getFlagEmoji(countryCode) {
-  return countryCode
-    .toUpperCase()
-    .replace(/./g, char => String.fromCodePoint(127397 + char.charCodeAt()));
-}
+
 
 async function getCoordinates(postal, country) {
   const apiKey = "AIzaSyBwOgpWgeY6e4SPNiB1nc_jKKqlN_Yn6YI";
@@ -333,9 +329,9 @@ const handleSubmit = async () => {
 			<label className="block text-sm font-medium">Från – Land</label>
 			<select name="pickup_country" value={form.pickup_country} onChange={handleChange} className="mt-1 w-full border rounded p-2">
 			{COUNTRIES.map((c) => (
-				<option key={c.code} value={c.code}>
-					{getFlagEmoji(c.code)} {c.name}
-				</option>
+<option key={c.code} value={c.code}>
+  {c.name}
+</option>
 			))}
 			</select>
 			</div>
@@ -363,9 +359,9 @@ const handleSubmit = async () => {
           <label className="block text-sm font-medium">Till – Land</label>
 			<select name="delivery_country" value={form.delivery_country} onChange={handleChange} className="mt-1 w-full border rounded p-2">
 			{COUNTRIES.map((c) => (
-				<option key={c.code} value={c.code}>
-			{getFlagEmoji(c.code)} {c.name}
-			</option>
+<option key={c.code} value={c.code}>
+  {c.name}
+</option>
 			))}
 			</select>
         </div>
