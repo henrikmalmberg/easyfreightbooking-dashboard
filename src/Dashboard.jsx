@@ -19,17 +19,28 @@ async function getCoordinates(postal, country) {
   const apiKey = "AIzaSyBwOgpWgeY6e4SPNiB1nc_jKKqlN_Yn6YI";
   const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${postal},${country}&key=${apiKey}`);
   const data = await response.json();
+
   if (data.status === "OK") {
-    const location = data.results[0].geometry.location;
-    const locality = data.results[0].address_components.find(c => c.types.includes("locality"));
+    const result = data.results[0];
+
+    // Kontrollera att landkoden i svaret matchar det valda landet
+    const countryComponent = result.address_components.find(c => c.types.includes("country"));
+    const countryCode = countryComponent?.short_name;
+
+    if (countryCode !== country) return null;
+
+    const location = result.geometry.location;
+    const locality = result.address_components.find(c => c.types.includes("locality"));
+
     return {
       coordinate: [location.lat, location.lng],
-      city: locality ? locality.long_name : ""
+      city: locality ? locality.long_name : null
     };
   } else {
     return null;
   }
 }
+
 
 function useCityLookup(postal, country) {
   const [city, setCity] = React.useState("");
@@ -39,7 +50,7 @@ function useCityLookup(postal, country) {
         if (data) {
           setCity(data.city);
         } else {
-          setCity("❌ Ogiltigt postnummer eller ort");
+          setCity("");
         }
       });
     } else {
@@ -195,7 +206,7 @@ function NewBooking() {
     if (name === "type") {
       if (value === "FTL") {
         updated[index]["weight"] = "24000";
-        updated[index]["length"] = "1360";
+        updated[index]["length"] = "";
         updated[index]["width"] = "";
         updated[index]["height"] = "";
       } else if (value === "Pallet") {
