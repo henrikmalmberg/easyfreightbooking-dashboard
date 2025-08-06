@@ -85,155 +85,6 @@ function Dashboard() {
   );
 }
 
-function ResultCard({ transport, onSelect }) {
-  return (
-    <div
-      onClick={() => onSelect(transport)}
-      className="cursor-pointer border rounded-lg p-4 mb-3 bg-white hover:bg-blue-50 shadow-sm transition"
-    >
-      <div className="flex items-center justify-between">
-        <div className="font-semibold text-lg">{transport.mode}</div>
-        <div className="text-blue-600 font-bold text-lg">{transport.total_price} kr</div>
-      </div>
-      <div className="text-sm text-gray-600 mt-1">
-        {transport.ldm} LDM, {transport.weight} kg<br />
-        {transport.days} dagar • {transport.kilometers} km
-      </div>
-    </div>
-  );
-}
-
-function NewBooking() {
-  const [goods, setGoods] = React.useState([
-    { type: "Colli", weight: "", length: "", width: "", height: "", quantity: 1 }
-  ]);
-  const [form, setForm] = React.useState({ pickup_country: "SE", pickup_postal: "", delivery_country: "SE", delivery_postal: "" });
-  const [result, setResult] = React.useState(null);
-  const navigate = useNavigate();
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleGoodsChange = (index, e) => {
-    const { name, value } = e.target;
-    const updated = [...goods];
-    updated[index][name] = value;
-    if (name === "type") {
-      if (value === "FTL") {
-        updated[index]["weight"] = "24000";
-        updated[index]["length"] = "1360";
-        updated[index]["width"] = "";
-        updated[index]["height"] = "";
-      } else if (value === "Pallet") {
-        updated[index]["length"] = "120";
-        updated[index]["width"] = "80";
-      }
-    }
-    setGoods(updated);
-  };
-
-  const addGoodsRow = () => setGoods([...goods, { type: "Colli", weight: "", length: "", width: "", height: "", quantity: 1 }]);
-  const removeGoodsRow = (index) => setGoods(goods.filter((_, i) => i !== index));
-
-  const handleSubmit = async () => {
-    try {
-      const response = await fetch("https://easyfreightbooking-api.onrender.com/calculate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, goods })
-      });
-      const data = await response.json();
-      console.log("Response from API:", data);
-      setResult(data);
-    } catch (err) {
-      console.error("API error:", err);
-    }
-  };
-
-  const handleSelect = (option) => {
-    console.log("Selected option:", option);
-    navigate("/new-booking");
-  };
-
-  return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">🚛 Skapa ny bokning</h1>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        <div>
-          <label className="block text-sm font-medium">Från – Land</label>
-          <select name="pickup_country" value={form.pickup_country} onChange={handleChange} className="mt-1 w-full border rounded p-2">
-            {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium">Från – Postnummer</label>
-          <input name="pickup_postal" value={form.pickup_postal} onChange={handleChange} className="mt-1 w-full border rounded p-2" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium">Till – Land</label>
-          <select name="delivery_country" value={form.delivery_country} onChange={handleChange} className="mt-1 w-full border rounded p-2">
-            {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium">Till – Postnummer</label>
-          <input name="delivery_postal" value={form.delivery_postal} onChange={handleChange} className="mt-1 w-full border rounded p-2" />
-        </div>
-      </div>
-
-      <div className="mb-4">
-        <h2 className="font-semibold mb-2">Gods</h2>
-        {goods.map((item, index) => (
-          <div key={index} className="grid grid-cols-6 gap-2 mb-2 items-end">
-            <label className="text-xs font-medium">Type</label>
-            <label className="text-xs font-medium">Weight</label>
-            <label className="text-xs font-medium">Length</label>
-            <label className="text-xs font-medium">Width</label>
-            <label className="text-xs font-medium">Height</label>
-            <label className="text-xs font-medium">Quantity</label>
-            <select name="type" value={item.type} onChange={(e) => handleGoodsChange(index, e)} className="col-span-1 border p-2 rounded">
-              <option value="Colli">Colli</option>
-              <option value="Pallet">Pallet</option>
-              <option value="FTL">Full Trailer Load (13.6 m)</option>
-            </select>
-            <input name="weight" placeholder="kg" value={item.weight} onChange={(e) => handleGoodsChange(index, e)} className="border p-2 rounded" />
-            <input name="length" placeholder="cm" value={item.length} onChange={(e) => handleGoodsChange(index, e)} className="border p-2 rounded" />
-            <input name="width" placeholder="cm" value={item.width} onChange={(e) => handleGoodsChange(index, e)} className="border p-2 rounded" />
-            <input name="height" placeholder="cm" value={item.height} onChange={(e) => handleGoodsChange(index, e)} className="border p-2 rounded" />
-            <div className="flex items-center">
-              <input name="quantity" type="number" min="1" value={item.quantity} onChange={(e) => handleGoodsChange(index, e)} className="border p-2 rounded w-full" />
-              {goods.length > 1 && (
-                <button onClick={() => removeGoodsRow(index)} className="ml-2 text-red-600">✕</button>
-              )}
-            </div>
-          </div>
-        ))}
-        <button onClick={addGoodsRow} className="mt-2 text-sm text-blue-600">+ Lägg till godsrad</button>
-      </div>
-
-      <button
-        onClick={handleSubmit}
-        className="mt-6 w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 shadow"
-      >
-        Beräkna pris
-      </button>
-
-      {result && (
-        <div className="mt-6 bg-white border rounded p-4 shadow-sm">
-          <h2 className="font-semibold mb-2">Prisuppskattning</h2>
-          {!result.options && <p className="text-red-600">❌ Inga alternativ hittades eller fel i API-svar.</p>}
-          {result.options?.map((opt, i) => (
-            <ResultCard key={i} transport={opt} onSelect={handleSelect} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export function Layout({ children }) {
   const [showSidebar, setShowSidebar] = React.useState(false);
 
@@ -270,5 +121,59 @@ function Sidebar({ visible, onClose }) {
         </button>
       </nav>
     </aside>
+  );
+}
+
+function NewBooking() {
+  const [response, setResponse] = React.useState(null);
+
+  const handleSubmit = async () => {
+    const payload = {
+      pickup_coordinate: [55.6050, 13.0038], // Malmö
+      pickup_country: "SE",
+      pickup_postal_prefix: "21",
+
+      delivery_coordinate: [45.4642, 9.1900], // Milan
+      delivery_country: "IT",
+      delivery_postal_prefix: "20",
+
+      chargeable_weight: 1000,
+    };
+
+    try {
+      const res = await fetch("https://easyfreightbooking-api.onrender.com/calculate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      setResponse(data);
+    } catch (error) {
+      console.error("API error:", error);
+    }
+  };
+
+  return (
+    <div>
+      <h2 className="text-2xl font-semibold mb-4">🧪 Testa API-anrop</h2>
+      <button
+        onClick={handleSubmit}
+        className="mb-4 px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700"
+      >
+        Skicka testpayload
+      </button>
+
+      {response && (
+        <div className="bg-white p-4 rounded shadow border">
+          <h3 className="text-lg font-semibold mb-2">Svar från webservicen</h3>
+          <pre className="text-sm text-gray-800 overflow-auto">
+            {JSON.stringify(response, null, 2)}
+          </pre>
+        </div>
+      )}
+    </div>
   );
 }
