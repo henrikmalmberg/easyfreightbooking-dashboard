@@ -38,12 +38,6 @@ function Dashboard() {
     console.warn("window.loggedInUserId not found – using fallback ID 1");
   }
 
-  React.useEffect(() => {
-    fetch(`https://easyfreightbooking-api.onrender.com/my_bookings?user_id=${userId}`)
-      .then((res) => res.json())
-      .then((data) => setBookings(data))
-      .catch((err) => console.error("Failed to fetch bookings", err));
-  }, []);
 
   return (
     <div>
