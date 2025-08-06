@@ -132,9 +132,6 @@ function NewBooking() {
   const removeGoodsRow = (index) => setGoods(goods.filter((_, i) => i !== index));
 
 const handleSubmit = async () => {
-	console.log("Skickar request till API...");
-	console.log("API Response:", data);
-
 
   const payload = {
     pickup_coordinate: [55.6050, 13.0038], // Malmö
@@ -147,7 +144,7 @@ const handleSubmit = async () => {
 
     chargeable_weight: 1000,
   };
-
+  
 try {
   const response = await fetch("https://easyfreightbooking-api.onrender.com/calculate", {
     method: "POST",
@@ -161,6 +158,8 @@ try {
 } catch (error) {
   console.error("API error:", error);
 }
+
+
 
 };
 
