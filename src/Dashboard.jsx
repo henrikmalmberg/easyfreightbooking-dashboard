@@ -22,50 +22,57 @@ async function getCoordinates(postal, country) {
   );
   const data = await response.json();
 
-  if (data.status === "OK") {
-    const result = data.results[0];
+  if (data.status !== "OK") return null;
 
-    const countryComponent = result.address_components.find(c =>
-      c.types.includes("country")
-    );
-    const countryCode = countryComponent?.short_name;
+  const result = data.results[0];
 
-    if (countryCode?.toUpperCase() !== country?.toUpperCase()) return null;
+  // Kontrollera landskod
+  const countryComponent = result.address_components.find((c) =>
+    c.types.includes("country")
+  );
+  const countryCode = countryComponent?.short_name;
 
-    const location = result.geometry.location;
-
-    const locality =
-      result.address_components.find(c => c.types.includes("locality")) ||
-      result.address_components.find(c => c.types.includes("postal_town"));
-
-    return {
-      coordinate: [location.lat, location.lng],
-      city: locality ? locality.long_name : null
-    };
-  } else {
+  if (!countryCode || countryCode.toUpperCase() !== country.toUpperCase()) {
     return null;
   }
+
+  const location = result.geometry.location;
+
+  const locality =
+    result.address_components.find((c) => c.types.includes("locality")) ||
+    result.address_components.find((c) => c.types.includes("postal_town"));
+
+  return {
+    coordinate: [location.lat, location.lng],
+    city: locality ? locality.long_name : null,
+  };
 }
 
 
 
 function useCityLookup(postal, country) {
-  const [city, setCity] = React.useState("");
+  const [city, setCity] = React.useState(null);
+
   React.useEffect(() => {
-    if (postal.length >= 2) {
+    let active = true;
+
+    if (postal.length >= 2 && country) {
       getCoordinates(postal, country).then((data) => {
-        if (data) {
-          setCity(data.city);
-        } else {
-          setCity("");
-        }
+        if (!active) return;
+        setCity(data?.city || null);
       });
     } else {
-      setCity("");
+      setCity(null);
     }
+
+    return () => {
+      active = false;
+    };
   }, [postal, country]);
+
   return city;
 }
+
 
 
 export default function App() {
@@ -288,7 +295,10 @@ try {
       onChange={handleChange}
       className="mt-1 border rounded p-2 w-[120px]" 
     />
-    <span className="text-sm text-gray-600 mt-1">{cityFrom}</span> {/* 👈 Validering */}
+    {cityFrom && (
+  <span className="text-sm text-green-600 mt-1">✅ {cityFrom}</span>
+)}
+
   </div>
 </div>
 <div>
