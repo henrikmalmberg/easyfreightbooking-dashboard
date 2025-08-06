@@ -45,10 +45,13 @@ async function getCoordinates(postal, country) {
 
   const location = result.geometry.location;
 
-  const locality =
-    result.address_components.find((c) => c.types.includes("locality")) ||
-    result.address_components.find((c) => c.types.includes("postal_town")) ||
-    result.address_components.find((c) => c.types.includes("administrative_area_level_2"));
+const locality =
+  result.address_components.find((c) => c.types.includes("locality")) ||
+  result.address_components.find((c) => c.types.includes("postal_town")) ||
+  result.address_components.find((c) => c.types.includes("administrative_area_level_2")) ||
+  result.address_components.find((c) => c.types.includes("sublocality")) ||
+  result.address_components.find((c) => c.types.includes("neighborhood"));
+
 
   return {
     coordinate: [location.lat, location.lng],
@@ -413,7 +416,7 @@ function Sidebar({ visible, onClose }) {
   return (
     <aside className={`fixed md:relative z-50 md:z-auto transform top-0 left-0 h-full w-64 bg-white border-r p-6 shadow-md transition-transform duration-300 ${visible ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}>
 <Link to="/dashboard" onClick={onClose} className="block mb-6">
-  <img src="/tree/main/logo.png" alt="EasyFreightBooking Logo" className="h-10" />
+  <img src="/logo.png" alt="EasyFreightBooking Logo" className="h-10" />
 </Link>
 
       <nav className="space-y-3">
