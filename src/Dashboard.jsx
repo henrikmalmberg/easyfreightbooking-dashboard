@@ -217,6 +217,15 @@ function NewBooking() {
   const [result, setResult] = React.useState(null);
     const [selectedOption, setSelectedOption] = React.useState(null); // ✅ FLYTTAD HIT
   const navigate = useNavigate();
+  
+    function calculateTotalWeight(goods) {
+    return goods.reduce((total, item) => {
+      const weight = parseFloat(item.weight) || 0;
+      const quantity = parseInt(item.quantity) || 0;
+      return total + weight * quantity;
+    }, 0);
+  }
+const chargeableWeight = calculateChargeableWeight(goods);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -232,12 +241,16 @@ function NewBooking() {
     if (name === "type") {
       if (value === "FTL") {
         updated[index]["weight"] = "24000";
-        updated[index]["length"] = "";
+        updated[index]["length"] = "13.6";
         updated[index]["width"] = "";
         updated[index]["height"] = "";
       } else if (value === "Pallet") {
         updated[index]["length"] = "120";
         updated[index]["width"] = "80";
+	    } else if (value === "Colli") {
+        updated[index]["length"] = "120";
+        updated[index]["width"] = "240";
+		updated[index]["height"] = "240";
       }
     }
     setGoods(updated);
@@ -251,6 +264,20 @@ const handleSubmit = async () => {
     alert("Kunde inte hämta koordinater. Kontrollera postnummer.");
     return;
   }
+function calculateChargeableWeight(goods) {
+  return goods.reduce((total, item) => {
+    const weight = parseFloat(item.weight) || 0;
+    const length = parseFloat(item.length) / 100 || 0;
+    const width = parseFloat(item.width) / 100 || 0;
+    const height = parseFloat(item.height) / 100 || 0;
+    const quantity = parseInt(item.quantity) || 0;
+
+    const volumeWeight = length * width * height * 335;
+    const chargeable = Math.max(weight, volumeWeight);
+
+    return total + chargeable * quantity;
+  }, 0);
+}
 
   const payload = {
     pickup_coordinate: cityFrom.coordinate,
@@ -375,6 +402,14 @@ const handleSubmit = async () => {
             </div>
           </div>
         ))}
+		<div className="text-sm mt-2">
+  <strong>Total fraktdragande vikt:</strong>{" "}
+  <span className={chargeableWeight > 25160 ? "text-red-600 font-semibold" : "text-green-600 font-semibold"}>
+    {Math.round(chargeableWeight)} kg
+  </span>
+  {" "} / 25 160 kg
+</div>
+
         <button onClick={addGoodsRow} className="mt-2 text-sm text-blue-600">+ Lägg till godsrad</button>
       </div>
 
