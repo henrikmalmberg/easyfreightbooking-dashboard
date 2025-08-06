@@ -17,9 +17,12 @@ const COUNTRIES = [
 
 async function getCoordinates(postal, country) {
   const apiKey = "AIzaSyBwOgpWgeY6e4SPNiB1nc_jKKqlN_Yn6YI";
+  const cleanCountry = country.trim().toUpperCase();
+
   const response = await fetch(
-    `https://maps.googleapis.com/maps/api/geocode/json?address=${postal},${country}&key=${apiKey}`
+    `https://maps.googleapis.com/maps/api/geocode/json?address=${postal}&components=country:${cleanCountry}&key=${apiKey}`
   );
+
   const data = await response.json();
 
   if (data.status !== "OK") return null;
@@ -31,16 +34,12 @@ async function getCoordinates(postal, country) {
   );
   const countryCode = countryComponent?.short_name;
 
-  const inputCode = country.trim().toUpperCase() === "UK" ? "GB" : country.trim().toUpperCase();
-  const countryCodeClean = (countryCode || "").trim().toUpperCase();
+  const expectedCode = cleanCountry === "UK" ? "GB" : cleanCountry;
+  const fromGoogle = (countryCode || "").trim().toUpperCase();
 
-  // 🔍 Logg för felsökning – ta bort senare
-  console.log("🔍 COUNTRY CHECK:", {
-    fromGoogle: countryCodeClean,
-    input: inputCode
-  });
+  console.log("COUNTRY CHECK:", { fromGoogle, input: expectedCode });
 
-  if (!countryCodeClean.startsWith(inputCode)) {
+  if (!fromGoogle.startsWith(expectedCode)) {
     return null;
   }
 
@@ -56,6 +55,7 @@ async function getCoordinates(postal, country) {
     city: locality ? locality.long_name : null,
   };
 }
+
 
 
 
@@ -413,7 +413,7 @@ function Sidebar({ visible, onClose }) {
   return (
     <aside className={`fixed md:relative z-50 md:z-auto transform top-0 left-0 h-full w-64 bg-white border-r p-6 shadow-md transition-transform duration-300 ${visible ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}>
 <Link to="/dashboard" onClick={onClose} className="block mb-6">
-  <img src="/logo.png" alt="EasyFreightBooking Logo" className="h-10" />
+  <img src="/tree/main/logo.png" alt="EasyFreightBooking Logo" className="h-10" />
 </Link>
 
       <nav className="space-y-3">
