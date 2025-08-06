@@ -148,21 +148,20 @@ const handleSubmit = async () => {
     chargeable_weight: 1000,
   };
 
-  try {
-    const response = await fetch("https://easyfreightbooking-api.onrender.com/calculate", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
+try {
+  const response = await fetch("https://easyfreightbooking-api.onrender.com/calculate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
 
-    const data = await response.json();
-    console.log("API Response:", data);
-    setResult(data); // använd useState för att visa resultatet i UI
-  } catch (error) {
-    console.error("API error:", error);
-  }
+  const result = await response.json();
+  console.log("API Response:", result); // ⬅ Använd rätt variabelnamn
+  setResult(result);
+} catch (error) {
+  console.error("API error:", error);
+}
+
 };
 
 
