@@ -233,15 +233,28 @@ const handleSubmit = async () => {
         Beräkna pris
       </button>
 
-      {result && (
-        <div className="mt-6 bg-white border rounded p-4 shadow-sm">
-          <h2 className="font-semibold mb-2">Prisuppskattning</h2>
-          {!result.options && <p className="text-red-600">❌ Inga alternativ hittades eller fel i API-svar.</p>}
-          {result.options?.map((opt, i) => (
-            <ResultCard key={i} transport={opt} onSelect={handleSelect} />
-          ))}
-        </div>
-      )}
+{result && (
+  <div className="mt-6 bg-white border rounded p-4 shadow-sm">
+    <h2 className="font-semibold mb-2">Prisuppskattning</h2>
+    {Object.entries(result).map(([mode, data], i) =>
+      data.status === "success" ? (
+        <ResultCard
+          key={i}
+          transport={{
+            mode,
+            total_price: `${data.total_price_eur} EUR`,
+            ldm: data.ldm || "–",
+            weight: data.weight || "–",
+            days: `${data.transit_time_days[0]}–${data.transit_time_days[1]}`,
+            kilometers: data.distance_km
+          }}
+          onSelect={handleSelect}
+        />
+      ) : null
+    )}
+  </div>
+)}
+
     </div>
   );
 }
