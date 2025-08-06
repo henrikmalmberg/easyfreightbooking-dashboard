@@ -26,39 +26,37 @@ async function getCoordinates(postal, country) {
 
   const result = data.results[0];
 
-  // Kontrollera landskod
   const countryComponent = result.address_components.find((c) =>
     c.types.includes("country")
   );
   const countryCode = countryComponent?.short_name;
-  const countryCodeClean = countryCode.trim().toUpperCase();
 
+  const inputCode = country.trim().toUpperCase() === "UK" ? "GB" : country.trim().toUpperCase();
+  const countryCodeClean = (countryCode || "").trim().toUpperCase();
 
-const inputCode = country.toUpperCase() === "UK" ? "GB" : country.toUpperCase();
+  // 🔍 Logg för felsökning – ta bort senare
+  console.log("🔍 COUNTRY CHECK:", {
+    fromGoogle: countryCodeClean,
+    input: inputCode
+  });
 
-if (!countryCode || countryCode.toUpperCase() !== inputCode) {
-  return null;
-}
-
+  if (!countryCodeClean.startsWith(inputCode)) {
+    return null;
+  }
 
   const location = result.geometry.location;
 
   const locality =
     result.address_components.find((c) => c.types.includes("locality")) ||
-    result.address_components.find((c) => c.types.includes("postal_town"));
+    result.address_components.find((c) => c.types.includes("postal_town")) ||
+    result.address_components.find((c) => c.types.includes("administrative_area_level_2"));
 
   return {
     coordinate: [location.lat, location.lng],
     city: locality ? locality.long_name : null,
   };
-  console.log("GOOGLE COUNTRY CODE:", countryCode);
-console.log("INPUT COUNTRY:", inputCode);
-if (countryCodeClean !== inputCode) {
-  console.warn("COUNTRY MISMATCH", { countryCodeClean, inputCode });
-  return null;
 }
 
-}
 
 
 
