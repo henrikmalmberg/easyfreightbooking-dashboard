@@ -137,20 +137,36 @@ function NewBooking() {
   const addGoodsRow = () => setGoods([...goods, { type: "Colli", weight: "", length: "", width: "", height: "", quantity: 1 }]);
   const removeGoodsRow = (index) => setGoods(goods.filter((_, i) => i !== index));
 
-  const handleSubmit = async () => {
-    try {
-      const response = await fetch("https://easyfreightbooking-api.onrender.com/calculate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, goods })
-      });
-      const data = await response.json();
-      console.log("Response from API:", data);
-      setResult(data);
-    } catch (err) {
-      console.error("API error:", err);
-    }
+const handleSubmit = async () => {
+  const payload = {
+    pickup_coordinate: [55.6050, 13.0038], // Malmö
+    pickup_country: "SE",
+    pickup_postal_prefix: "21",
+
+    delivery_coordinate: [45.4642, 9.1900], // Milan
+    delivery_country: "IT",
+    delivery_postal_prefix: "20",
+
+    chargeable_weight: 1000,
   };
+
+  try {
+    const response = await fetch("https://easyfreightbooking-api.onrender.com/calculate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+    console.log("API Response:", data);
+    setResponse(data); // använd useState för att visa resultatet i UI
+  } catch (error) {
+    console.error("API error:", error);
+  }
+};
+
 
   const handleSelect = (option) => {
     console.log("Selected option:", option);
