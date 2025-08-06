@@ -31,6 +31,25 @@ async function getCoordinates(postal, country) {
   }
 }
 
+function useCityLookup(postal, country) {
+  const [city, setCity] = React.useState("");
+  React.useEffect(() => {
+    if (postal.length >= 2) {
+      getCoordinates(postal, country).then((data) => {
+        if (data) {
+          setCity(data.city);
+        } else {
+          setCity("❌ Ogiltigt postnummer eller ort");
+        }
+      });
+    } else {
+      setCity("");
+    }
+  }, [postal, country]);
+  return city;
+}
+
+
 export default function App() {
   return (
     <Router>
