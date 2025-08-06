@@ -307,9 +307,9 @@ try {
 					className="mt-1 border rounded p-2 w-[120px]" 
 				/>
 		
-				
+				{cityFrom?.country === form.pickup_country && (
 					<span className="text-sm text-gray-600 mt-1">{cityFrom.city}</span>
-				
+				)}
 		
 			</div>
 		</div>
@@ -333,9 +333,9 @@ try {
 					className="mt-1 border rounded p-2 w-[120px]"
 				/>
 				
-				
+				{cityTo?.country === form.delivery_country && (
 					<span className="text-sm text-gray-600 mt-1">{cityTo.city}</span>
-				
+				)}
 			</div>
 		</div>
 
