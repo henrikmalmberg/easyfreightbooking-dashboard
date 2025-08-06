@@ -113,6 +113,24 @@ function Dashboard() {
   );
 }
 
+
+
+export function Layout({ children }) {
+  const [showSidebar, setShowSidebar] = React.useState(false);
+
+  return (
+    <div className="flex min-h-screen bg-gray-100">
+      <div className={`fixed inset-0 bg-black bg-opacity-30 z-40 md:hidden ${showSidebar ? "block" : "hidden"}`} onClick={() => setShowSidebar(false)}></div>
+      <Sidebar visible={showSidebar} onClose={() => setShowSidebar(false)} />
+
+      <main className="flex-1 p-4 md:p-8 overflow-auto w-full">
+        <button className="md:hidden mb-4 text-blue-600" onClick={() => setShowSidebar(true)}>☰ Meny</button>
+        {children}
+      </main>
+    </div>
+  );
+}
+
 function ResultCard({ transport, selectedOption, onSelect }) {
   const icons = {
     road_freight: "🚛",
@@ -330,21 +348,7 @@ try {
   );
 }
 
-export function Layout({ children }) {
-  const [showSidebar, setShowSidebar] = React.useState(false);
 
-  return (
-    <div className="flex min-h-screen bg-gray-100">
-      <div className={`fixed inset-0 bg-black bg-opacity-30 z-40 md:hidden ${showSidebar ? "block" : "hidden"}`} onClick={() => setShowSidebar(false)}></div>
-      <Sidebar visible={showSidebar} onClose={() => setShowSidebar(false)} />
-
-      <main className="flex-1 p-4 md:p-8 overflow-auto w-full">
-        <button className="md:hidden mb-4 text-blue-600" onClick={() => setShowSidebar(true)}>☰ Meny</button>
-        {children}
-      </main>
-    </div>
-  );
-}
 
 function Sidebar({ visible, onClose }) {
   return (
