@@ -138,6 +138,8 @@ function NewBooking() {
   const removeGoodsRow = (index) => setGoods(goods.filter((_, i) => i !== index));
 
 const handleSubmit = async () => {
+	console.log("Skickar request till API...");
+
   const payload = {
     pickup_coordinate: [55.6050, 13.0038], // Malmö
     pickup_country: "SE",
