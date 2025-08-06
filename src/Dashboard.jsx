@@ -425,7 +425,7 @@ function Sidebar({ visible, onClose }) {
   return (
     <aside className={`fixed md:relative z-50 md:z-auto transform top-0 left-0 h-full w-64 bg-white border-r p-6 shadow-md transition-transform duration-300 ${visible ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}>
 <Link to="/dashboard" onClick={onClose} className="block mb-6">
-  <img src="/logo.png" alt="EasyFreightBooking Logo" className="h-14 w-auto" />
+  <img src="/logo.png" alt="EasyFreightBooking Logo" className="h-18 w-auto" />
 </Link>
 
       <nav className="space-y-3">
