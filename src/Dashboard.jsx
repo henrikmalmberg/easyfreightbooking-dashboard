@@ -247,39 +247,42 @@ function NewBooking() {
   const removeGoodsRow = (index) => setGoods(goods.filter((_, i) => i !== index));
 
 const handleSubmit = async () => {
+  if (!cityFrom?.coordinate || !cityTo?.coordinate) {
+    alert("Kunde inte hämta koordinater. Kontrollera postnummer.");
+    return;
+  }
 
   const payload = {
-    pickup_coordinate: [55.6050, 13.0038], // Malmö
-    pickup_country: "SE",
-    pickup_postal_prefix: "21",
+    pickup_coordinate: cityFrom.coordinate,
+    pickup_country: form.pickup_country,
+    pickup_postal_prefix: form.pickup_postal.substring(0, 2),
 
-    delivery_coordinate: [45.4642, 9.1900], // Milan
-    delivery_country: "IT",
-    delivery_postal_prefix: "20",
+    delivery_coordinate: cityTo.coordinate,
+    delivery_country: form.delivery_country,
+    delivery_postal_prefix: form.delivery_postal.substring(0, 2),
 
-    chargeable_weight: 1000,
+    chargeable_weight: goods.reduce((sum, g) => {
+      const weight = parseFloat(g.weight);
+      return sum + (isNaN(weight) ? 0 : weight * (g.quantity || 1));
+    }, 0),
   };
-  
 
-  
-  
-try {
-  const response = await fetch("https://easyfreightbooking-api.onrender.com/calculate", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+  try {
+    const response = await fetch("https://easyfreightbooking-api.onrender.com/calculate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
 
-  const result = await response.json();
-  console.log("API Response:", result); // ⬅ Använd rätt variabelnamn
-  setResult(result);
-} catch (error) {
-  console.error("API error:", error);
-}
-
-
-
+    const result = await response.json();
+    console.log("API Response:", result);
+    setResult(result);
+  } catch (error) {
+    console.error("API error:", error);
+    alert("Kunde inte kontakta servern.");
+  }
 };
+
 
 
   const handleSelect = (option) => {
