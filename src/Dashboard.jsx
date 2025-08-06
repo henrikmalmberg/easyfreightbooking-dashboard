@@ -11,9 +11,78 @@ const COUNTRIES = [
   { code: "HR", name: "Croatia" }, { code: "SI", name: "Slovenia" }, { code: "GR", name: "Greece" },
   { code: "IE", name: "Ireland" }, { code: "EE", name: "Estonia" }, { code: "LV", name: "Latvia" },
   { code: "LT", name: "Lithuania" }, { code: "LU", name: "Luxembourg" }, 
-  { code: "MT", name: "Malta" }, { code: "UK", name: "United Kingdom" }, { code: "CH", name: "Switzerland" },
+  { code: "UK", name: "United Kingdom" }, { code: "CH", name: "Switzerland" },
   { code: "UA", name: "Ukraine" }
 ];
+
+async function getCoordinates(postal, country) {
+  const apiKey = "AIzaSyBwOgpWgeY6e4SPNiB1nc_jKKqlN_Yn6YI";
+  const response = await fetch(
+    `https://maps.googleapis.com/maps/api/geocode/json?address=${postal}&components=country:${country}&key=${apiKey}`
+  );
+
+  const data = await response.json();
+  if (data.status !== "OK" || !data.results.length) return null;
+
+  const result = data.results[0];
+
+  const countryComponent = result.address_components.find((c) =>
+    c.types.includes("country")
+  );
+  const countryCode = countryComponent?.short_name?.toUpperCase();
+
+  if (!countryCode || countryCode !== country.toUpperCase()) {
+    console.warn("❌ COUNTRY MISMATCH", { input: country, fromGoogle: countryCode });
+    return null;
+  }
+
+  const location = result.geometry.location;
+
+  const locality =
+    result.address_components.find((c) => c.types.includes("locality")) ||
+    result.address_components.find((c) => c.types.includes("postal_town")) ||
+    result.address_components.find((c) => c.types.includes("administrative_area_level_2"));
+
+  return {
+    coordinate: [location.lat, location.lng],
+    city: locality ? locality.long_name : null,
+  };
+}
+
+
+
+
+
+
+function useCityLookup(postal, country) {
+  const [city, setCity] = React.useState(null);
+
+  React.useEffect(() => {
+    let active = true;
+
+    if (postal.length >= 2 && country) {
+      getCoordinates(postal, country).then((data) => {
+        if (!active) return;
+        if (data?.city) {
+          setCity(data.city);
+        } else {
+          setCity(null);
+        }
+      });
+    } else {
+      setCity(null);
+    }
+
+    return () => {
+      active = false;
+    };
+  }, [postal, country]);
+
+  return city;
+}
+
+
+
 
 export default function App() {
   return (
@@ -37,13 +106,6 @@ function Dashboard() {
   } catch (e) {
     console.warn("window.loggedInUserId not found – using fallback ID 1");
   }
-
-  React.useEffect(() => {
-    fetch(`https://easyfreightbooking-api.onrender.com/my_bookings?user_id=${userId}`)
-      .then((res) => res.json())
-      .then((data) => setBookings(data))
-      .catch((err) => console.error("Failed to fetch bookings", err));
-  }, []);
 
   return (
     <div>
@@ -85,37 +147,81 @@ function Dashboard() {
   );
 }
 
-function ResultCard({ transport, onSelect }) {
+
+
+export function Layout({ children }) {
+  const [showSidebar, setShowSidebar] = React.useState(false);
+
+  return (
+    <div className="flex min-h-screen bg-gray-100">
+      <div className={`fixed inset-0 bg-black bg-opacity-30 z-40 md:hidden ${showSidebar ? "block" : "hidden"}`} onClick={() => setShowSidebar(false)}></div>
+      <Sidebar visible={showSidebar} onClose={() => setShowSidebar(false)} />
+
+      <main className="flex-1 p-4 md:p-8 overflow-auto w-full">
+        <button className="md:hidden mb-4 text-blue-600" onClick={() => setShowSidebar(true)}>☰ Meny</button>
+        {children}
+      </main>
+    </div>
+  );
+}
+
+function ResultCard({ transport, selectedOption, onSelect }) {
+  const icons = {
+    road_freight: "🚛",
+    ocean_freight: "🚢",
+    intermodal_rail: "🚚🚆",
+    conventional_rail: "🚆"
+  };
+
+  const isSelected = selectedOption?.mode === transport.mode;
+
   return (
     <div
       onClick={() => onSelect(transport)}
-      className="cursor-pointer border rounded-lg p-4 mb-3 bg-white hover:bg-blue-50 shadow-sm transition"
+      className={`cursor-pointer border rounded-lg p-4 mb-3 bg-white shadow-sm transition ${
+        isSelected ? "border-blue-600 bg-blue-50" : "hover:bg-blue-50"
+      }`}
     >
-      <div className="flex items-center justify-between">
-        <div className="font-semibold text-lg">{transport.mode}</div>
-        <div className="text-blue-600 font-bold text-lg">{transport.total_price} kr</div>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2 text-lg font-semibold capitalize">
+          <input
+            type="radio"
+            name="selectedTransport"
+            checked={isSelected}
+            onChange={() => onSelect(transport)}
+          />
+          <span>{icons[transport.mode]}</span>
+          {transport.mode.replace("_", " ")}
+        </div>
+        <div className="text-blue-600 font-bold text-lg">{transport.total_price}</div>
       </div>
-      <div className="text-sm text-gray-600 mt-1">
-        {transport.ldm} LDM, {transport.weight} kg<br />
-        {transport.days} dagar • {transport.kilometers} km
+      <div className="text-sm text-gray-600 space-y-1">
+        <div><strong>Earliest pickup:</strong> {transport.earliest_pickup}</div>
+        <div><strong>Transit time:</strong> {transport.days} dagar</div>
       </div>
     </div>
   );
 }
 
+
+
 function NewBooking() {
-  const [goods, setGoods] = React.useState([
+
+
+	const [goods, setGoods] = React.useState([
     { type: "Colli", weight: "", length: "", width: "", height: "", quantity: 1 }
   ]);
-  const [form, setForm] = React.useState({ pickup_country: "SE", pickup_postal: "", delivery_country: "SE", delivery_postal: "" });
+	const [form, setForm] = React.useState({ pickup_country: "SE", pickup_postal: "", delivery_country: "SE", delivery_postal: "" });
   const [result, setResult] = React.useState(null);
+    const [selectedOption, setSelectedOption] = React.useState(null); // ✅ FLYTTAD HIT
   const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
-
+	const cityFrom = useCityLookup(form.pickup_postal, form.pickup_country);
+	const cityTo = useCityLookup(form.delivery_postal, form.delivery_country);
   const handleGoodsChange = (index, e) => {
     const { name, value } = e.target;
     const updated = [...goods];
@@ -123,7 +229,9 @@ function NewBooking() {
     if (name === "type") {
       if (value === "FTL") {
         updated[index]["weight"] = "24000";
-        updated[index]["length"] = "13.6";
+        updated[index]["length"] = "";
+        updated[index]["width"] = "";
+        updated[index]["height"] = "";
       } else if (value === "Pallet") {
         updated[index]["length"] = "120";
         updated[index]["width"] = "80";
@@ -135,106 +243,105 @@ function NewBooking() {
   const addGoodsRow = () => setGoods([...goods, { type: "Colli", weight: "", length: "", width: "", height: "", quantity: 1 }]);
   const removeGoodsRow = (index) => setGoods(goods.filter((_, i) => i !== index));
 
-  const handleSubmit = async () => {
-    try {
-      const response = await fetch("https://easyfreightbooking-api.onrender.com/calculate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, goods })
-      });
-      const data = await response.json();
-      console.log("Response from API:", data);
-      setResult(data);
-    } catch (err) {
-      console.error("API error:", err);
-    }
+const handleSubmit = async () => {
+
+  const payload = {
+    pickup_coordinate: [55.6050, 13.0038], // Malmö
+    pickup_country: "SE",
+    pickup_postal_prefix: "21",
+
+    delivery_coordinate: [45.4642, 9.1900], // Milan
+    delivery_country: "IT",
+    delivery_postal_prefix: "20",
+
+    chargeable_weight: 1000,
   };
+  
+
+  
+  
+try {
+  const response = await fetch("https://easyfreightbooking-api.onrender.com/calculate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  const result = await response.json();
+  console.log("API Response:", result); // ⬅ Använd rätt variabelnamn
+  setResult(result);
+} catch (error) {
+  console.error("API error:", error);
+}
+
+
+
+};
+
 
   const handleSelect = (option) => {
     console.log("Selected option:", option);
     navigate("/new-booking");
   };
 
-return (
-  <div>
-    <h1 className="text-2xl font-bold mb-6">🚛 Skapa ny bokning</h1>
+  return (
+    <div>
+      <h1 className="text-2xl font-bold mb-6">🚛 Skapa ny bokning</h1>
 
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-      {/* Från – Land */}
-      <div>
-        <label className="block text-sm font-medium">Från – Land</label>
-        <select
-          name="pickup_country"
-          value={form.pickup_country}
-          onChange={handleChange}
-          className="mt-1 w-full border rounded p-2"
-        >
-          {COUNTRIES.map((c) => (
-            <option key={c.code} value={c.code}>
-              {c.name}
-            </option>
-          ))}
-        </select>
-      </div>
+		<div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+			<div>
+			<label className="block text-sm font-medium">Från – Land</label>
+			<select name="pickup_country" value={form.pickup_country} onChange={handleChange} className="mt-1 w-full border rounded p-2">
+            {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
+			</select>
+			</div>
+		<div>
+		<label className="block text-sm font-medium">Från – Postnummer</label>
+		<div className="flex items-center gap-2">
+		<input
+		name="pickup_postal"
+		value={form.pickup_postal}
+		onChange={handleChange}
+		className="mt-1 border rounded p-2 w-[120px]" 
+    />
+{cityTo && (
+  <span className="text-sm text-gray-600 mt-1">{cityFrom}</span>
+)}
 
-      {/* Från – Postnummer */}
-      <div>
-        <label className="block text-sm font-medium">Från – Postnummer</label>
-        <div className="flex items-center gap-2">
-          <input
-            name="pickup_postal"
-            value={form.pickup_postal}
-            onChange={handleChange}
-            className="mt-1 border rounded p-2 w-[120px]"
-          />
-          {cityFrom?.country === form.pickup_country && (
-            <span className="text-sm text-green-600 mt-1">✅ {cityFrom.city}</span>
-          )}
+
+  </div>
+</div>
+<div>
+          <label className="block text-sm font-medium">Till – Land</label>
+          <select name="delivery_country" value={form.delivery_country} onChange={handleChange} className="mt-1 w-full border rounded p-2">
+            {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
+          </select>
         </div>
+<div>
+  <label className="block text-sm font-medium">Till – Postnummer</label>
+  <div className="flex items-center gap-2">
+    <input
+      name="delivery_postal"
+      value={form.delivery_postal}
+      onChange={handleChange}
+      className="mt-1 border rounded p-2 w-[120px]"
+    />
+    <span className="text-sm text-gray-600 mt-1">{cityTo}</span>
+  </div>
+</div>
+
       </div>
-
-      {/* Till – Land */}
-      <div>
-        <label className="block text-sm font-medium">Till – Land</label>
-        <select
-          name="delivery_country"
-          value={form.delivery_country}
-          onChange={handleChange}
-          className="mt-1 w-full border rounded p-2"
-        >
-          {COUNTRIES.map((c) => (
-            <option key={c.code} value={c.code}>
-              {c.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Till – Postnummer */}
-      <div>
-        <label className="block text-sm font-medium">Till – Postnummer</label>
-        <div className="flex items-center gap-2">
-          <input
-            name="delivery_postal"
-            value={form.delivery_postal}
-            onChange={handleChange}
-            className="mt-1 border rounded p-2 w-[120px]"
-          />
-          {cityTo?.country === form.delivery_country && (
-            <span className="text-sm text-green-600 mt-1">✅ {cityTo.city}</span>
-          )}
-        </div>
-      </div>
-    </div>
-
-
-
-
 
       <div className="mb-4">
         <h2 className="font-semibold mb-2">Gods</h2>
         {goods.map((item, index) => (
           <div key={index} className="grid grid-cols-6 gap-2 mb-2 items-end">
+            <label className="text-xs font-medium">Type</label>
+            <label className="text-xs font-medium">Weight</label>
+            <label className="text-xs font-medium">Length</label>
+            <label className="text-xs font-medium">Width</label>
+            <label className="text-xs font-medium">Height</label>
+            <label className="text-xs font-medium">Quantity</label>
             <select name="type" value={item.type} onChange={(e) => handleGoodsChange(index, e)} className="col-span-1 border p-2 rounded">
               <option value="Colli">Colli</option>
               <option value="Pallet">Pallet</option>
@@ -262,40 +369,60 @@ return (
         Beräkna pris
       </button>
 
-      {result && (
-        <div className="mt-6 bg-white border rounded p-4 shadow-sm">
-          <h2 className="font-semibold mb-2">Prisuppskattning</h2>
-          {!result.options && <p className="text-red-600">❌ Inga alternativ hittades eller fel i API-svar.</p>}
-          {result.options?.map((opt, i) => (
-            <ResultCard key={i} transport={opt} onSelect={handleSelect} />
-          ))}
-        </div>
-      )}
+{result && (
+  <div className="mt-6 bg-white border rounded p-4 shadow-sm">
+    <h2 className="font-semibold mb-2">Avaliable freight options</h2>
+{Object.entries(result).map(([mode, data], i) =>
+  data.status === "success" ? (
+<ResultCard
+  key={i}
+  transport={{
+    mode,
+    total_price: `${data.total_price_eur} EUR`,
+    earliest_pickup: data.earliest_pickup_date,
+    days: `${data.transit_time_days[0]}–${data.transit_time_days[1]}`
+  }}
+  selectedOption={selectedOption}
+  onSelect={setSelectedOption}
+/>
+
+  ) : null
+)}
+
+    <button
+      onClick={() => handleSelect(selectedOption)}
+      disabled={!selectedOption}
+      className={`mt-4 w-full py-2 rounded font-medium text-white shadow ${
+        selectedOption ? "bg-green-600 hover:bg-green-700" : "bg-gray-300 cursor-not-allowed"
+      }`}
+    >
+      Proceed with selected option
+    </button>
+
+  </div>
+)}
+
     </div>
   );
 }
 
-export function Layout({ children }) {
-  return (
-    <div className="flex min-h-screen bg-gray-100">
-      <Sidebar />
-      <main className="flex-1 p-8 overflow-auto">{children}</main>
-    </div>
-  );
-}
 
-function Sidebar() {
+
+function Sidebar({ visible, onClose }) {
   return (
-    <aside className="w-64 bg-white border-r p-6 shadow-md">
-      <h2 className="text-xl font-bold mb-6">EasyFreightBooking</h2>
+    <aside className={`fixed md:relative z-50 md:z-auto transform top-0 left-0 h-full w-64 bg-white border-r p-6 shadow-md transition-transform duration-300 ${visible ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}>
+<Link to="/dashboard" onClick={onClose} className="block mb-6">
+  <img src="/logo.png" alt="EasyFreightBooking Logo" className="h-14 w-auto" />
+</Link>
+
       <nav className="space-y-3">
-        <Link to="/dashboard" className="block text-blue-600 font-medium hover:text-blue-800">
+        <Link to="/dashboard" className="block text-blue-600 font-medium hover:text-blue-800" onClick={onClose}>
           Dashboard
         </Link>
-        <Link to="/new-booking" className="block text-gray-700 hover:text-blue-600">
+        <Link to="/new-booking" className="block text-gray-700 hover:text-blue-600" onClick={onClose}>
           Ny bokning
         </Link>
-        <Link to="/account" className="block text-gray-700 hover:text-blue-600">
+        <Link to="/account" className="block text-gray-700 hover:text-blue-600" onClick={onClose}>
           Mitt konto
         </Link>
         <hr className="my-4" />
