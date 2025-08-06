@@ -17,20 +17,26 @@ const COUNTRIES = [
 
 async function getCoordinates(postal, country) {
   const apiKey = "AIzaSyBwOgpWgeY6e4SPNiB1nc_jKKqlN_Yn6YI";
-  const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${postal},${country}&key=${apiKey}`);
+  const response = await fetch(
+    `https://maps.googleapis.com/maps/api/geocode/json?address=${postal},${country}&key=${apiKey}`
+  );
   const data = await response.json();
 
   if (data.status === "OK") {
     const result = data.results[0];
 
-    // Kontrollera att landkoden i svaret matchar det valda landet
-    const countryComponent = result.address_components.find(c => c.types.includes("country"));
+    const countryComponent = result.address_components.find(c =>
+      c.types.includes("country")
+    );
     const countryCode = countryComponent?.short_name;
 
-    if (countryCode !== country) return null;
+    if (countryCode?.toUpperCase() !== country?.toUpperCase()) return null;
 
     const location = result.geometry.location;
-    const locality = result.address_components.find(c => c.types.includes("locality"));
+
+    const locality =
+      result.address_components.find(c => c.types.includes("locality")) ||
+      result.address_components.find(c => c.types.includes("postal_town"));
 
     return {
       coordinate: [location.lat, location.lng],
@@ -40,6 +46,7 @@ async function getCoordinates(postal, country) {
     return null;
   }
 }
+
 
 
 function useCityLookup(postal, country) {
