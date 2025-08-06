@@ -123,7 +123,9 @@ function NewBooking() {
     if (name === "type") {
       if (value === "FTL") {
         updated[index]["weight"] = "24000";
-        updated[index]["length"] = "13.6";
+        updated[index]["length"] = "1360";
+        updated[index]["width"] = "";
+        updated[index]["height"] = "";
       } else if (value === "Pallet") {
         updated[index]["length"] = "120";
         updated[index]["width"] = "80";
@@ -186,6 +188,12 @@ function NewBooking() {
         <h2 className="font-semibold mb-2">Gods</h2>
         {goods.map((item, index) => (
           <div key={index} className="grid grid-cols-6 gap-2 mb-2 items-end">
+            <label className="text-xs font-medium">Type</label>
+            <label className="text-xs font-medium">Weight</label>
+            <label className="text-xs font-medium">Length</label>
+            <label className="text-xs font-medium">Width</label>
+            <label className="text-xs font-medium">Height</label>
+            <label className="text-xs font-medium">Quantity</label>
             <select name="type" value={item.type} onChange={(e) => handleGoodsChange(index, e)} className="col-span-1 border p-2 rounded">
               <option value="Colli">Colli</option>
               <option value="Pallet">Pallet</option>
