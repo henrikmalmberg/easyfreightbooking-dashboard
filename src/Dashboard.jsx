@@ -373,7 +373,10 @@ try {
 function Sidebar({ visible, onClose }) {
   return (
     <aside className={`fixed md:relative z-50 md:z-auto transform top-0 left-0 h-full w-64 bg-white border-r p-6 shadow-md transition-transform duration-300 ${visible ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}>
-      <h2 className="text-xl font-bold mb-6">EasyFreightBooking</h2>
+<Link to="/dashboard" onClick={onClose} className="block mb-6">
+  <img src="/logo.png" alt="EasyFreightBooking Logo" className="h-10" />
+</Link>
+
       <nav className="space-y-3">
         <Link to="/dashboard" className="block text-blue-600 font-medium hover:text-blue-800" onClick={onClose}>
           Dashboard
