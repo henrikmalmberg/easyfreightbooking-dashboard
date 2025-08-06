@@ -16,8 +16,8 @@ const COUNTRIES = [
 ];
 
 async function getCoordinates(postal, country) {
-  const apiKey = "YOUR_GOOGLE_GEOCODING_API_KEY";
-  const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${postal},${country}&key=${AIzaSyBwOgpWgeY6e4SPNiB1nc_jKKqlN_Yn6YI}`);
+  const apiKey = "AIzaSyBwOgpWgeY6e4SPNiB1nc_jKKqlN_Yn6YI";
+  const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${postal},${country}&key=${apiKey}`);
   const data = await response.json();
   if (data.status === "OK") {
     const location = data.results[0].geometry.location;
