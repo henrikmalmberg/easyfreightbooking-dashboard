@@ -133,6 +133,8 @@ function NewBooking() {
 
 const handleSubmit = async () => {
 	console.log("Skickar request till API...");
+	console.log("API Response:", data);
+
 
   const payload = {
     pickup_coordinate: [55.6050, 13.0038], // Malmö
