@@ -32,9 +32,12 @@ async function getCoordinates(postal, country) {
   );
   const countryCode = countryComponent?.short_name;
 
-  if (!countryCode || countryCode.toUpperCase() !== country.toUpperCase()) {
-    return null;
-  }
+const inputCode = country.toUpperCase() === "UK" ? "GB" : country.toUpperCase();
+
+if (!countryCode || countryCode.toUpperCase() !== inputCode) {
+  return null;
+}
+
 
   const location = result.geometry.location;
 
@@ -295,9 +298,10 @@ try {
       onChange={handleChange}
       className="mt-1 border rounded p-2 w-[120px]" 
     />
-    {cityFrom && (
-  <span className="text-sm text-green-600 mt-1">✅ {cityFrom}</span>
+{cityTo && (
+  <span className="text-sm text-green-600 mt-1">✅ {cityTo}</span>
 )}
+
 
   </div>
 </div>
