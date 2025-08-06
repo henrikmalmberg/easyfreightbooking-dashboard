@@ -273,7 +273,7 @@ try {
     <span className="text-sm text-gray-600 mt-1">{cityFrom}</span> {/* 👈 Validering */}
   </div>
 </div>
-
+<div>
           <label className="block text-sm font-medium">Till – Land</label>
           <select name="delivery_country" value={form.delivery_country} onChange={handleChange} className="mt-1 w-full border rounded p-2">
             {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
