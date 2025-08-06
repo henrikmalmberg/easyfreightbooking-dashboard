@@ -31,6 +31,8 @@ async function getCoordinates(postal, country) {
     c.types.includes("country")
   );
   const countryCode = countryComponent?.short_name;
+  const countryCodeClean = countryCode.trim().toUpperCase();
+
 
 const inputCode = country.toUpperCase() === "UK" ? "GB" : country.toUpperCase();
 
@@ -49,6 +51,13 @@ if (!countryCode || countryCode.toUpperCase() !== inputCode) {
     coordinate: [location.lat, location.lng],
     city: locality ? locality.long_name : null,
   };
+  console.log("GOOGLE COUNTRY CODE:", countryCode);
+console.log("INPUT COUNTRY:", inputCode);
+if (countryCodeClean !== inputCode) {
+  console.warn("COUNTRY MISMATCH", { countryCodeClean, inputCode });
+  return null;
+}
+
 }
 
 
