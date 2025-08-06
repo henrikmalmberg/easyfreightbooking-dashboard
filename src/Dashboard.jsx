@@ -15,6 +15,22 @@ const COUNTRIES = [
   { code: "UA", name: "Ukraine" }
 ];
 
+async function getCoordinates(postal, country) {
+  const apiKey = "YOUR_GOOGLE_GEOCODING_API_KEY";
+  const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${postal},${country}&key=${AIzaSyBwOgpWgeY6e4SPNiB1nc_jKKqlN_Yn6YI}`);
+  const data = await response.json();
+  if (data.status === "OK") {
+    const location = data.results[0].geometry.location;
+    const locality = data.results[0].address_components.find(c => c.types.includes("locality"));
+    return {
+      coordinate: [location.lat, location.lng],
+      city: locality ? locality.long_name : ""
+    };
+  } else {
+    return null;
+  }
+}
+
 export default function App() {
   return (
     <Router>
@@ -37,7 +53,6 @@ function Dashboard() {
   } catch (e) {
     console.warn("window.loggedInUserId not found – using fallback ID 1");
   }
-
 
   return (
     <div>
