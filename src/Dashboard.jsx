@@ -264,9 +264,9 @@ const chargeableWeight = calculateChargeableWeight(goods);
         updated[index]["length"] = "120";
         updated[index]["width"] = "80";
 	    } else if (value === "Colli") {
-        updated[index]["length"] = "120";
-        updated[index]["width"] = "240";
-		updated[index]["height"] = "240";
+        updated[index]["length"] = "";
+        updated[index]["width"] = "";
+		updated[index]["height"] = "";
       }
     }
     setGoods(updated);
@@ -277,6 +277,7 @@ const chargeableWeight = calculateChargeableWeight(goods);
   const removeGoodsRow = (index) => setGoods(goods.filter((_, i) => i !== index));
 
 const handleSubmit = async () => {
+setResult(null);
   if (!cityFrom?.coordinate || !cityTo?.coordinate) {
     alert("Kunde inte hämta koordinater. Kontrollera postnummer.");
     return;
