@@ -218,6 +218,21 @@ function NewBooking() {
     const [selectedOption, setSelectedOption] = React.useState(null); // ✅ FLYTTAD HIT
   const navigate = useNavigate();
   
+  const calculateChargeableWeight = (goods) => {
+  return goods.reduce((total, item) => {
+    const weight = parseFloat(item.weight) || 0;
+    const length = parseFloat(item.length) / 100 || 0;
+    const width = parseFloat(item.width) / 100 || 0;
+    const height = parseFloat(item.height) / 100 || 0;
+    const quantity = parseInt(item.quantity) || 0;
+
+    const volumeWeight = length * width * height * 335;
+    const chargeable = Math.max(weight, volumeWeight);
+
+    return total + chargeable * quantity;
+  }, 0);
+};
+  
     function calculateTotalWeight(goods) {
     return goods.reduce((total, item) => {
       const weight = parseFloat(item.weight) || 0;
@@ -255,20 +270,7 @@ const chargeableWeight = calculateChargeableWeight(goods);
     }
     setGoods(updated);
   };
-const calculateChargeableWeight = (goods) => {
-  return goods.reduce((total, item) => {
-    const weight = parseFloat(item.weight) || 0;
-    const length = parseFloat(item.length) / 100 || 0;
-    const width = parseFloat(item.width) / 100 || 0;
-    const height = parseFloat(item.height) / 100 || 0;
-    const quantity = parseInt(item.quantity) || 0;
 
-    const volumeWeight = length * width * height * 335;
-    const chargeable = Math.max(weight, volumeWeight);
-
-    return total + chargeable * quantity;
-  }, 0);
-};
 
   const addGoodsRow = () => setGoods([...goods, { type: "Colli", weight: "", length: "", width: "", height: "", quantity: 1 }]);
   const removeGoodsRow = (index) => setGoods(goods.filter((_, i) => i !== index));
