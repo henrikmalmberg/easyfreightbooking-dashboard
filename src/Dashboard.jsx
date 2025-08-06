@@ -55,23 +55,22 @@ async function getCoordinates(postal, country) {
 
 
 function useCityLookup(postal, country) {
-  const [location, setLocation] = React.useState(null);
+  const [data, setData] = React.useState(null);
 
   React.useEffect(() => {
     let active = true;
 
     if (postal.length >= 2 && country) {
-      getCoordinates(postal, country).then((data) => {
+      getCoordinates(postal, country).then((res) => {
         if (!active) return;
-
-        if (data?.city) {
-          setLocation({ city: data.city, country: country });  // ✅ Återinför landkoden
+        if (res?.city && res?.coordinate) {
+          setData({ city: res.city, coordinate: res.coordinate, country });
         } else {
-          setLocation(null);
+          setData(null);
         }
       });
     } else {
-      setLocation(null);
+      setData(null);
     }
 
     return () => {
@@ -79,8 +78,9 @@ function useCityLookup(postal, country) {
     };
   }, [postal, country]);
 
-  return location;
+  return data;
 }
+
 
 
 
