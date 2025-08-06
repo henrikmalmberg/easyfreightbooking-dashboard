@@ -359,7 +359,7 @@ const handleSubmit = async () => {
             <label className="text-xs font-medium">Height</label>
             <label className="text-xs font-medium">Quantity</label>
             <select name="type" value={item.type} onChange={(e) => handleGoodsChange(index, e)} className="col-span-1 border p-2 rounded">
-              <option value="Colli">Colli</option>
+              <option value="Colli">Colli/Part Load</option>
               <option value="Pallet">Pallet</option>
               <option value="FTL">Full Trailer Load (13.6 m)</option>
             </select>
