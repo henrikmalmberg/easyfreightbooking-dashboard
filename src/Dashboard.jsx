@@ -172,8 +172,7 @@ function ResultCard({ transport, selectedOption, onSelect }) {
 
 
 function NewBooking() {
-	const cityFrom = useCityLookup(form.pickup_postal, form.pickup_country);
-	const cityTo = useCityLookup(form.delivery_postal, form.delivery_country);
+
 
   const [goods, setGoods] = React.useState([
     { type: "Colli", weight: "", length: "", width: "", height: "", quantity: 1 }
@@ -187,7 +186,8 @@ function NewBooking() {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
-
+	const cityFrom = useCityLookup(form.pickup_postal, form.pickup_country);
+	const cityTo = useCityLookup(form.delivery_postal, form.delivery_country);
   const handleGoodsChange = (index, e) => {
     const { name, value } = e.target;
     const updated = [...goods];
