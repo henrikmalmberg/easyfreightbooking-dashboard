@@ -296,40 +296,50 @@ try {
             {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
 			</select>
 			</div>
+		
 		<div>
-		<label className="block text-sm font-medium">Från – Postnummer</label>
-		<div className="flex items-center gap-2">
-		<input
-		name="pickup_postal"
-		value={form.pickup_postal}
-		onChange={handleChange}
-		className="mt-1 border rounded p-2 w-[120px]" 
-		/>
+			<label className="block text-sm font-medium">Från – Postnummer</label>
+			<div className="flex items-center gap-2">
+				<input
+					name="pickup_postal"
+					value={form.pickup_postal}
+					onChange={handleChange}
+					className="mt-1 border rounded p-2 w-[120px]" 
+				/>
 		
-		<span className="text-sm text-gray-600 mt-1">{cityFrom}</span>
+				{cityFrom?.country === form.pickup_country && (
+					<span className="text-sm text-gray-600 mt-1">{cityFrom.city}</span>
+				)}
 		
+			</div>
+		</div>
 
 
-  </div>
-</div>
+
 <div>
           <label className="block text-sm font-medium">Till – Land</label>
           <select name="delivery_country" value={form.delivery_country} onChange={handleChange} className="mt-1 w-full border rounded p-2">
             {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
           </select>
         </div>
-<div>
-  <label className="block text-sm font-medium">Till – Postnummer</label>
-  <div className="flex items-center gap-2">
-    <input
-      name="delivery_postal"
-      value={form.delivery_postal}
-      onChange={handleChange}
-      className="mt-1 border rounded p-2 w-[120px]"
-    />
-    <span className="text-sm text-gray-600 mt-1">{cityTo}</span>
-  </div>
-</div>
+		
+		<div>
+			<label className="block text-sm font-medium">Till – Postnummer</label>
+			<div className="flex items-center gap-2">
+				<input
+					name="delivery_postal"
+					value={form.delivery_postal}
+					onChange={handleChange}
+					className="mt-1 border rounded p-2 w-[120px]"
+				/>
+				
+				{cityTo?.country === form.delivery_country && (
+					<span className="text-sm text-gray-600 mt-1">{cityTo.city}</span>
+				)}
+			</div>
+		</div>
+
+
 
       </div>
 
