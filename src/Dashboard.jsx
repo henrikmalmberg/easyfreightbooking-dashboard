@@ -264,18 +264,18 @@ try {
     <h2 className="font-semibold mb-2">Avaliable freight options</h2>
 {Object.entries(result).map(([mode, data], i) =>
   data.status === "success" ? (
-    <ResultCard
-      key={i}
-      transport={{
-        mode: mode.replace("_", " "),
-        emoji: mode === "road_freight" ? "🚛" : mode === "ocean_freight" ? "🚢" : "🚆",
-        total_price: `${data.total_price_eur} EUR`,
-        pickup_date: data.earliest_pickup_date,
-        days: `${data.transit_time_days[0]}–${data.transit_time_days[1]}`
-      }}
-      selectedOption={selectedOption}
-      setSelectedOption={setSelectedOption}
-    />
+<ResultCard
+  key={i}
+  transport={{
+    mode,
+    total_price: `${data.total_price_eur} EUR`,
+    earliest_pickup: data.earliest_pickup_date,
+    days: `${data.transit_time_days[0]}–${data.transit_time_days[1]}`
+  }}
+  selectedOption={selectedOption}
+  onSelect={setSelectedOption}
+/>
+
   ) : null
 )}
 
