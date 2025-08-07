@@ -507,7 +507,8 @@ setResult(null);
   Proceed with selected option
 </button>
 
-
+}
+)
 
 
 function Sidebar({ visible, onClose }) {
