@@ -181,16 +181,6 @@ function ResultCard({ transport, selectedOption, onSelect }) {
 
   const isSelected = selectedOption?.mode === transport.mode;
 
-  const icons = {
-    road_freight: "🚛",
-    express_road: "🚀",
-    ocean_freight: "🚢",
-    intermodal_rail: "🚚🚆",
-    conventional_rail: "🚆"
-  };
-
-  const isSelected = selectedOption?.mode === transport.mode;
-
   return (
     <div
       onClick={() => onSelect(transport)}
