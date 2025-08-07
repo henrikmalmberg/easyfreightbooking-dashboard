@@ -181,6 +181,19 @@ function ResultCard({ transport, selectedOption, onSelect }) {
 
   const isSelected = selectedOption?.mode === transport.mode;
 
+function ResultCard({ transport, selectedOption, onSelect }) {
+  const [showInfo, setShowInfo] = React.useState(false);
+
+  const icons = {
+    road_freight: "🚛",
+    express_road: "🚀",
+    ocean_freight: "🚢",
+    intermodal_rail: "🚚🚆",
+    conventional_rail: "🚆"
+  };
+
+  const isSelected = selectedOption?.mode === transport.mode;
+
   return (
     <div
       onClick={() => onSelect(transport)}
@@ -189,59 +202,59 @@ function ResultCard({ transport, selectedOption, onSelect }) {
       }`}
     >
       <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2 text-lg font-semibold capitalize">
+        {/* Vänstersida: ikoner + label + info-ikon */}
+        <div className="flex items-center gap-2 text-lg font-semibold capitalize relative">
           <input
             type="radio"
             name="selectedTransport"
             checked={isSelected}
             onChange={() => onSelect(transport)}
           />
-		  
-		  
-			<span>{icons[transport.mode]}</span>
-			{transport.mode.replace("_", " ")}
-			{transport.description && (
-			<div className="relative">
-				<span
-				className="ml-2 text-gray-400 cursor-pointer hover:text-blue-600"
-				onClick={(e) => {
-				e.stopPropagation();
-				setShowInfo(!showInfo);
-				}}
-				>
-				ⓘ
-				</span>
-			
-				{showInfo && (
-				<div className="absolute top-6 left-0 w-64 p-2 text-sm text-gray-800 bg-white border rounded shadow-md z-10">
-				{transport.description}
-				</div>
-				)}
-			</div>
-			)}
-		  
-		  
-		  
+          <span>{icons[transport.mode]}</span>
+          <span>{transport.mode.replace("_", " ")}</span>
+
+          {transport.description && (
+            <>
+              <span
+                className="ml-1 text-gray-400 cursor-pointer hover:text-blue-600"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowInfo(!showInfo);
+                }}
+              >
+                ⓘ
+              </span>
+              {showInfo && (
+                <div className="absolute top-6 left-0 w-64 p-2 text-sm text-gray-800 bg-white border rounded shadow-md z-10">
+                  {transport.description}
+                </div>
+              )}
+            </>
+          )}
         </div>
-		
-		
-		
-		
-		
-		
+
+        {/* Högersida: pris */}
         <div className="text-blue-600 font-bold text-lg">{transport.total_price}</div>
       </div>
 
       <div className="text-sm text-gray-600 space-y-1">
-        <div><strong>Earliest pickup:</strong> {transport.earliest_pickup}</div>
-        <div><strong>Transit time:</strong> {transport.days} days</div>
+        <div>
+          <strong>Earliest pickup:</strong> {transport.earliest_pickup}
+        </div>
+        <div>
+          <strong>Transit time:</strong> {transport.days} days
+        </div>
         {transport.co2 && (
-          <div><strong>🌍 CO₂ emissions:</strong> {(transport.co2 / 1000).toFixed(1)} kg</div>
+          <div>
+            <strong>🌍 CO₂ emissions:</strong>{" "}
+            {(transport.co2 / 1000).toFixed(1)} kg
+          </div>
         )}
       </div>
     </div>
   );
 }
+
 
 
 
