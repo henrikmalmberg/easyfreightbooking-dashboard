@@ -26,14 +26,75 @@ import { useLocation, useNavigate, Link } from "react-router-dom";
  * }
  */
 
-function SummaryBadge({ label, value }) {
+function SummaryHeader({ search, option }) {
   return (
-    <div className="px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-sm">
-      <span className="font-medium">{label}: </span>
-      <span className="font-semibold">{value}</span>
+    <section className="rounded-lg border bg-white px-6 py-5 shadow-sm">
+      <div className="flex items-start justify-between gap-6">
+        {/* Vänster: titel + rutt */}
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900">Booking details</h2>
+          <p className="mt-1 text-sm text-gray-500">
+            {search.pickup_country} ({search.pickup_postal}{search.pickup_city ? ` ${search.pickup_city}` : ""})
+            {" "}→{" "}
+            {search.delivery_country} ({search.delivery_postal}{search.delivery_city ? ` ${search.delivery_city}` : ""})
+          </p>
+        </div>
+
+        {/* Höger: priset som primär signal */}
+        <div className="text-right">
+          <div className="text-2xl font-semibold text-gray-900">
+            {option.total_price_eur} <span className="text-base font-normal text-gray-500">EUR</span>
+          </div>
+          <div className="text-xs text-gray-500">excl. VAT</div>
+        </div>
+      </div>
+
+      <div className="mt-4 border-t pt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <InfoItem label="Selected product" value={option.mode.replace("_", " ")} />
+        <InfoItem label="Earliest pickup" value={option.earliest_pickup_date} />
+        <InfoItem
+          label="Transit"
+          value={
+            Array.isArray(option.transit_time_days)
+              ? `${option.transit_time_days[0]}–${option.transit_time_days[1]} days`
+              : option.transit_time_days
+          }
+        />
+        <InfoItem
+          label="CO₂ (est.)"
+          value={`${(option.co2_emissions_grams / 1000).toFixed(1)} kg`}
+        />
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <InfoItem label="Pieces" value={String(search.goods?.reduce((a,g)=>a+(Number(g.quantity)||0),0) || 1)} />
+        <InfoItem
+          label="Total weight"
+          value={`${Math.round(
+            search.goods?.reduce((a,g)=>a + (Number(g.weight)||0) * (Number(g.quantity)||1), 0
+          ) || 0)} kg`}
+        />
+        <InfoItem
+          label="Chargeable (priced)"
+          value={`${Math.round(search.chargeableWeight)} kg`}
+          emphasize
+        />
+      </div>
+    </section>
+  );
+}
+
+function InfoItem({ label, value, emphasize = false }) {
+  return (
+    <div className="flex flex-col">
+      <span className="text-xs uppercase tracking-wide text-gray-500">{label}</span>
+      <span className={`mt-0.5 ${emphasize ? "font-semibold text-emerald-700" : "text-gray-900"}`}>
+        {value || "—"}
+      </span>
     </div>
   );
 }
+
 
 function AddressSection({ title, side, value, onChange, lockedCountry, lockedPostal }) {
   // side: "pickup" | "delivery"
