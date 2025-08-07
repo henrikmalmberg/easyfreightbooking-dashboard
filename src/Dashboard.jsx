@@ -181,9 +181,6 @@ function ResultCard({ transport, selectedOption, onSelect }) {
 
   const isSelected = selectedOption?.mode === transport.mode;
 
-function ResultCard({ transport, selectedOption, onSelect }) {
-  const [showInfo, setShowInfo] = React.useState(false);
-
   const icons = {
     road_freight: "🚛",
     express_road: "🚀",
