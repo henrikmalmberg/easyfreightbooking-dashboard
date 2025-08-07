@@ -171,6 +171,7 @@ export function Layout({ children }) {
 function ResultCard({ transport, selectedOption, onSelect }) {
   const icons = {
     road_freight: "🚛",
+    express_road: "🚀",
     ocean_freight: "🚢",
     intermodal_rail: "🚚🚆",
     conventional_rail: "🚆"
@@ -198,13 +199,18 @@ function ResultCard({ transport, selectedOption, onSelect }) {
         </div>
         <div className="text-blue-600 font-bold text-lg">{transport.total_price}</div>
       </div>
+
       <div className="text-sm text-gray-600 space-y-1">
         <div><strong>Earliest pickup:</strong> {transport.earliest_pickup}</div>
         <div><strong>Transit time:</strong> {transport.days} days</div>
+        {transport.co2 && (
+          <div><strong>🌍 CO₂ emissions:</strong> {(transport.co2 / 1000).toFixed(1)} kg</div>
+        )}
       </div>
     </div>
   );
 }
+
 
 
 
