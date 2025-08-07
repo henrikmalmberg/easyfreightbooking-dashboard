@@ -495,7 +495,7 @@ setResult(null);
     total_price: `${data.total_price_eur} EUR`,
     earliest_pickup: data.earliest_pickup_date,
     days: `${data.transit_time_days[0]}–${data.transit_time_days[1]}`,
-    co2: data.co2_emissions_grams
+    co2: data.co2_emissions_grams,
 	description: data.description
   }}
   selectedOption={selectedOption}
