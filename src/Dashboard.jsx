@@ -113,17 +113,17 @@ function Dashboard() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">📦 Mina Bokningar</h1>
+        <h1 className="text-3xl font-bold">📦 My bookings</h1>
         <Link
           to="/new-booking"
           className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
         >
-          + Ny bokning
+          + New booking
         </Link>
       </div>
 
       {bookings.length === 0 ? (
-        <div className="text-gray-500">Inga bokningar ännu.</div>
+        <div className="text-gray-500">No bookings yet.</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {bookings.map((booking) => (
@@ -161,7 +161,7 @@ export function Layout({ children }) {
       <Sidebar visible={showSidebar} onClose={() => setShowSidebar(false)} />
 
       <main className="flex-1 p-4 md:p-8 overflow-auto w-full">
-        <button className="md:hidden mb-4 text-blue-600" onClick={() => setShowSidebar(true)}>☰ Meny</button>
+        <button className="md:hidden mb-4 text-blue-600" onClick={() => setShowSidebar(true)}>☰ Menu</button>
         {children}
       </main>
     </div>
@@ -200,7 +200,7 @@ function ResultCard({ transport, selectedOption, onSelect }) {
       </div>
       <div className="text-sm text-gray-600 space-y-1">
         <div><strong>Earliest pickup:</strong> {transport.earliest_pickup}</div>
-        <div><strong>Transit time:</strong> {transport.days} dagar</div>
+        <div><strong>Transit time:</strong> {transport.days} days</div>
       </div>
     </div>
   );
@@ -279,7 +279,7 @@ const chargeableWeight = calculateChargeableWeight(goods);
 const handleSubmit = async () => {
 setResult(null);
   if (!cityFrom?.coordinate || !cityTo?.coordinate) {
-    alert("Kunde inte hämta koordinater. Kontrollera postnummer.");
+    alert("Check postal codes.");
     return;
   }
 
@@ -310,7 +310,7 @@ setResult(null);
     setResult(result);
   } catch (error) {
     console.error("API error:", error);
-    alert("Kunde inte kontakta servern.");
+    alert("Server connections error.");
   }
 };
 
@@ -323,7 +323,7 @@ setResult(null);
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">🚛 Skapa ny bokning</h1>
+      <h1 className="text-2xl font-bold mb-6">🚛 Create new booking</h1>
 
 		<div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
 			<div>
@@ -338,7 +338,7 @@ setResult(null);
 			</div>
 		
 		<div>
-			<label className="block text-sm font-medium">Från – Postnummer</label>
+			<label className="block text-sm font-medium">From postal code</label>
 			<div className="flex items-center gap-2">
 				<input
 					name="pickup_postal"
@@ -357,7 +357,7 @@ setResult(null);
 
 
 <div>
-          <label className="block text-sm font-medium">Till – Land</label>
+          <label className="block text-sm font-medium">To - country</label>
 			<select name="delivery_country" value={form.delivery_country} onChange={handleChange} className="mt-1 w-full border rounded p-2">
 			{COUNTRIES.map((c) => (
 <option key={c.code} value={c.code}>
@@ -368,7 +368,7 @@ setResult(null);
         </div>
 		
 		<div>
-			<label className="block text-sm font-medium">Till – Postnummer</label>
+			<label className="block text-sm font-medium">To - postal code</label>
 			<div className="flex items-center gap-2">
 				<input
 					name="delivery_postal"
@@ -422,14 +422,14 @@ setResult(null);
   {" "}
 </div>
 
-        <button onClick={addGoodsRow} className="mt-2 text-sm text-blue-600">+ Lägg till godsrad</button>
+        <button onClick={addGoodsRow} className="mt-2 text-sm text-blue-600">+ Add row</button>
       </div>
 
       <button
         onClick={handleSubmit}
         className="mt-6 w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 shadow"
       >
-        Beräkna pris
+        Search freight options
       </button>
 
 {result && (
@@ -483,14 +483,14 @@ function Sidebar({ visible, onClose }) {
           Dashboard
         </Link>
         <Link to="/new-booking" className="block text-gray-700 hover:text-blue-600" onClick={onClose}>
-          Ny bokning
+          New booking
         </Link>
         <Link to="/account" className="block text-gray-700 hover:text-blue-600" onClick={onClose}>
-          Mitt konto
+          My account
         </Link>
         <hr className="my-4" />
         <button className="flex items-center text-sm text-gray-500 hover:text-red-500">
-          Logga ut
+          Log out
         </button>
       </nav>
     </aside>
