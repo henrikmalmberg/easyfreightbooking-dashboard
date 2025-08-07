@@ -98,7 +98,7 @@ export default function App() {
         </Routes>
       </Layout>
     </Router>
-  )
+  ),
 }
 
 function Dashboard() {
@@ -327,7 +327,7 @@ setResult(null);
 
 		<div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
 			<div>
-			<label className="block text-sm font-medium">Från – Land</label>
+			<label className="block text-sm font-medium">From - country</label>
 			<select name="pickup_country" value={form.pickup_country} onChange={handleChange} className="mt-1 w-full border rounded p-2">
 			{COUNTRIES.map((c) => (
 <option key={c.code} value={c.code}>
