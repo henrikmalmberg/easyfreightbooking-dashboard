@@ -1,6 +1,6 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from "react-router-dom";
-import BookingForm from "./src/BookingForm";
+import BookingForm from "./BookingForm";
 
 const COUNTRIES = [
   { code: "SE", name: "Sweden" }, { code: "DK", name: "Denmark" }, { code: "NO", name: "Norway" },
