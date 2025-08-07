@@ -169,6 +169,8 @@ export function Layout({ children }) {
 }
 
 function ResultCard({ transport, selectedOption, onSelect }) {
+  const [showInfo, setShowInfo] = React.useState(false);
+
   const icons = {
     road_freight: "🚛",
     express_road: "🚀",
@@ -194,9 +196,39 @@ function ResultCard({ transport, selectedOption, onSelect }) {
             checked={isSelected}
             onChange={() => onSelect(transport)}
           />
-          <span>{icons[transport.mode]}</span>
-          {transport.mode.replace("_", " ")}
+		  
+		  
+			<span>{icons[transport.mode]}</span>
+			{transport.mode.replace("_", " ")}
+			{transport.description && (
+			<div className="relative">
+				<span
+				className="ml-2 text-gray-400 cursor-pointer hover:text-blue-600"
+				onClick={(e) => {
+				e.stopPropagation();
+				setShowInfo(!showInfo);
+				}}
+				>
+				ⓘ
+				</span>
+			
+				{showInfo && (
+				<div className="absolute top-6 left-0 w-64 p-2 text-sm text-gray-800 bg-white border rounded shadow-md z-10">
+				{transport.description}
+				</div>
+				)}
+			</div>
+			)}
+		  
+		  
+		  
         </div>
+		
+		
+		
+		
+		
+		
         <div className="text-blue-600 font-bold text-lg">{transport.total_price}</div>
       </div>
 
@@ -450,7 +482,8 @@ setResult(null);
     total_price: `${data.total_price_eur} EUR`,
     earliest_pickup: data.earliest_pickup_date,
     days: `${data.transit_time_days[0]}–${data.transit_time_days[1]}`,
-    co2: data.co2_emissions_grams // <-- 🟢 Lägg till detta
+    co2: data.co2_emissions_grams
+	description: data.description
   }}
   selectedOption={selectedOption}
   onSelect={setSelectedOption}
