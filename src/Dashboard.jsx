@@ -486,7 +486,7 @@ setResult(null);
 {result && (
   <div className="mt-6 bg-white border rounded p-4 shadow-sm">
     <h2 className="font-semibold mb-2">Avaliable freight options</h2>
-{Object.entries(result)..filter(([_, data]) => data?.available === true) // ✅ Visa bara tillgängliga
+{Object.entries(result)..filter(([_, data]) => data && data.available === true) // ✅ Visa bara tillgängliga
   .map(([mode, data], i) => (
 <ResultCard
   key={i}
