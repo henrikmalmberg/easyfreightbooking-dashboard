@@ -334,7 +334,6 @@ setResult(null);
     chargeable_weight: Math.round(chargeableWeight),
   };
 
-
   try {
     const response = await fetch("https://easyfreightbooking-api.onrender.com/calculate", {
       method: "POST",
@@ -356,7 +355,7 @@ setResult(null);
 const handleSelect = (option) => {
   if (!option) return;
 
-  navigate("/new-booking", {
+  navigate("/confirm", {           // ⬅️ var "/new-booking"
     state: {
       search: {
         pickup_country: form.pickup_country,
@@ -365,8 +364,8 @@ const handleSelect = (option) => {
         delivery_country: form.delivery_country,
         delivery_postal: form.delivery_postal,
         delivery_city: cityTo?.city || "",
-        goods,                    // raderna du fyllde i
-        chargeableWeight,         // fraktdragande vikt
+        goods,
+        chargeableWeight,
       },
       option: {
         mode: option.mode,
@@ -381,6 +380,7 @@ const handleSelect = (option) => {
     },
   });
 };
+
 
 
 
