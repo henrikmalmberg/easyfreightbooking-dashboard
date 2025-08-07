@@ -510,7 +510,7 @@ setResult(null);
   </div>
 )}
 
-    </div>
+   
   );
 }
 
