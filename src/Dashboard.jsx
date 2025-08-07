@@ -241,7 +241,6 @@ function ResultCard({ transport, selectedOption, onSelect }) {
     </div>
   );
 }
-}
 
 
 
