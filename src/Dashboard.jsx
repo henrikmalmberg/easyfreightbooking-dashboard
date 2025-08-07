@@ -449,11 +449,13 @@ setResult(null);
     mode,
     total_price: `${data.total_price_eur} EUR`,
     earliest_pickup: data.earliest_pickup_date,
-    days: `${data.transit_time_days[0]}–${data.transit_time_days[1]}`
+    days: `${data.transit_time_days[0]}–${data.transit_time_days[1]}`,
+    co2: data.co2_emissions_grams // <-- 🟢 Lägg till detta
   }}
   selectedOption={selectedOption}
   onSelect={setSelectedOption}
 />
+
 
   ) : null
 )}
