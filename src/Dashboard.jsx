@@ -1,5 +1,6 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from "react-router-dom";
+import BookingForm from "./src/BookingForm";
 
 const COUNTRIES = [
   { code: "SE", name: "Sweden" }, { code: "DK", name: "Denmark" }, { code: "NO", name: "Norway" },
@@ -95,6 +96,7 @@ export default function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/new-booking" element={<NewBooking />} />
+		   <Route path="/confirm" element={<BookingForm />} /> {/* ✅ Ny bokningsvy */}
         </Routes>
       </Layout>
     </Router>
@@ -354,9 +356,18 @@ setResult(null);
 
 
   const handleSelect = (option) => {
-    console.log("Selected option:", option);
-    navigate("/new-booking");
-  };
+  if (!option) return;
+  navigate("/confirm", {
+    state: {
+      selectedOption: option,
+      form,
+      goods,
+      cityFrom,
+      cityTo
+    }
+  });
+};
+
 
   return (
     <div>
