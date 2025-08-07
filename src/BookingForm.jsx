@@ -1,141 +1,466 @@
-import React, { useState, useEffect } from "react";
+// src/BookingForm.jsx
+import React from "react";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 
-const BookingForm = ({ selectedOption, searchData }) => {
-  const [formData, setFormData] = useState({
-    sender: {
-      businessName: "",
-      address: "",
-      city: searchData?.pickup_city || "",
-      contactName: "",
-      phone: "",
-      email: "",
-      openingHours: "",
-      instructions: ""
-    },
-    receiver: {
-      businessName: "",
-      address: "",
-      city: searchData?.delivery_city || "",
-      contactName: "",
-      phone: "",
-      email: "",
-      openingHours: "",
-      instructions: ""
-    },
-    goods: {
-      weight: searchData?.chargeable_weight || "",
-      type: searchData?.goods_type || "",
-      length: searchData?.length || "",
-      width: searchData?.width || "",
-      height: searchData?.height || "",
-      reference1: "",
-      reference2: "",
-      tailLift: false,
-      preNotice: false
-    }
-  });
+/**
+ * Förväntad location.state-struktur (exempel):
+ * {
+ *   search: {
+ *     pickup_country: "SE",
+ *     pickup_postal: "21617",
+ *     pickup_city: "Limhamn",
+ *     delivery_country: "IT",
+ *     delivery_postal: "41040",
+ *     delivery_city: "Province of Modena",
+ *     goods: [{ type: "Colli", weight: "150", length: "120", width: "80", height: "60", quantity: 2 }],
+ *     chargeableWeight: 420   // antal kg som priset baserades på
+ *   },
+ *   option: {
+ *     mode: "conventional_rail",
+ *     total_price_eur: 2714,
+ *     earliest_pickup_date: "2025-08-12",
+ *     transit_time_days: [4, 5],
+ *     co2_emissions_grams: 361900,
+ *     description: "Some text..."
+ *   }
+ * }
+ */
 
-  const maxAllowedWeight = searchData?.chargeable_weight || 0;
-
-  const handleChange = (section, field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        [field]: value
-      }
-    }));
-  };
-
-  const handleGoodsChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      goods: {
-        ...prev.goods,
-        [field]: value
-      }
-    }));
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // TODO: Validering + API-anrop till backend
-    console.log("Submitting booking:", formData);
-  };
-
+function SummaryBadge({ label, value }) {
   return (
-    <form onSubmit={handleSubmit} className="max-w-6xl mx-auto p-6 bg-white rounded shadow space-y-8">
-      
-      {/* Fraktsammanfattning */}
-      <div className="bg-gray-100 p-4 rounded">
-        <h2 className="text-lg font-semibold mb-1">Shipping Summary</h2>
-        <p>
-          {searchData?.pickup_country} ({searchData?.pickup_postal_prefix} {formData.sender.city}) →
-          {searchData?.delivery_country} ({searchData?.delivery_postal_prefix} {formData.receiver.city})<br />
-          Selected option: {selectedOption?.icon} {selectedOption?.name}<br />
-          Price: {selectedOption?.total_price_eur} EUR |
-          Pickup: {selectedOption?.earliest_pickup_date} |
-          Transit time: {selectedOption?.transit_time_days?.join("–")} days |
-          CO₂: {(selectedOption?.co2_emissions_grams / 1000).toFixed(1)} kg
-        </p>
-      </div>
+    <div className="px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-sm">
+      <span className="font-medium">{label}: </span>
+      <span className="font-semibold">{value}</span>
+    </div>
+  );
+}
 
-      {/* Adressuppgifter */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {["sender", "receiver"].map((role) => (
-          <div key={role}>
-            <h3 className="text-md font-semibold mb-2">{role === "sender" ? "Sender" : "Receiver"}</h3>
-            <div className="space-y-3">
-              <input className="w-full input" placeholder="Business Name" value={formData[role].businessName} onChange={e => handleChange(role, "businessName", e.target.value)} />
-              <input className="w-full input" placeholder="Address" value={formData[role].address} onChange={e => handleChange(role, "address", e.target.value)} />
-              <input className="w-full input" placeholder="City" value={formData[role].city} onChange={e => handleChange(role, "city", e.target.value)} />
-              <div className="flex gap-3">
-                <input className="w-1/2 input" placeholder="Country" value={role === "sender" ? searchData?.pickup_country : searchData?.delivery_country} disabled />
-                <input className="w-1/2 input" placeholder="Postal Code" value={role === "sender" ? searchData?.pickup_postal_prefix : searchData?.delivery_postal_prefix} disabled />
-              </div>
-              <input className="w-full input" placeholder="Contact Name" value={formData[role].contactName} onChange={e => handleChange(role, "contactName", e.target.value)} />
-              <input className="w-full input" placeholder="Phone" value={formData[role].phone} onChange={e => handleChange(role, "phone", e.target.value)} />
-              <input className="w-full input" placeholder="Email" value={formData[role].email} onChange={e => handleChange(role, "email", e.target.value)} />
-              <input className="w-full input" placeholder="Opening Hours" value={formData[role].openingHours} onChange={e => handleChange(role, "openingHours", e.target.value)} />
-              <textarea className="w-full input" placeholder="Instructions to driver" value={formData[role].instructions} onChange={e => handleChange(role, "instructions", e.target.value)} />
-            </div>
-          </div>
-        ))}
-      </div>
+function AddressSection({ title, side, value, onChange, lockedCountry, lockedPostal }) {
+  // side: "pickup" | "delivery"
+  return (
+    <div className="bg-white border rounded-lg p-4 shadow-sm">
+      <h3 className="text-lg font-semibold mb-3">{title}</h3>
 
-      {/* Godsinfo */}
-      <div>
-        <h3 className="text-md font-semibold mb-2">Goods & Booking</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input className="w-full input" placeholder="Weight (kg)" value={formData.goods.weight} disabled />
-          <input className="w-full input" placeholder="Type" value={formData.goods.type} disabled={!!formData.goods.type} onChange={e => handleGoodsChange("type", e.target.value)} />
-          <input className="w-full input" placeholder="Length (cm)" value={formData.goods.length} onChange={e => handleGoodsChange("length", e.target.value)} />
-          <input className="w-full input" placeholder="Width (cm)" value={formData.goods.width} onChange={e => handleGoodsChange("width", e.target.value)} />
-          <input className="w-full input" placeholder="Height (cm)" value={formData.goods.height} onChange={e => handleGoodsChange("height", e.target.value)} />
-          <input className="w-full input" placeholder="Reference 1" value={formData.goods.reference1} onChange={e => handleGoodsChange("reference1", e.target.value)} />
-          <input className="w-full input" placeholder="Reference 2" value={formData.goods.reference2} onChange={e => handleGoodsChange("reference2", e.target.value)} />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Country (locked) */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Country</label>
+          <input
+            className="mt-1 w-full border rounded p-2 bg-gray-50 text-gray-700"
+            value={lockedCountry}
+            disabled
+          />
         </div>
 
-        <div className="flex gap-4 mt-4">
-          <label className="flex items-center">
-            <input type="checkbox" checked={formData.goods.tailLift} onChange={e => handleGoodsChange("tailLift", e.target.checked)} />
-            <span className="ml-2">Tail-lift</span>
-          </label>
-          <label className="flex items-center">
-            <input type="checkbox" checked={formData.goods.preNotice} onChange={e => handleGoodsChange("preNotice", e.target.checked)} />
-            <span className="ml-2">Pre-notice</span>
-          </label>
+        {/* Postal code (locked) */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Postal code</label>
+          <input
+            className="mt-1 w-full border rounded p-2 bg-gray-50 text-gray-700"
+            value={lockedPostal}
+            disabled
+          />
+        </div>
+
+        {/* City (editable) */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">City</label>
+          <input
+            className="mt-1 w-full border rounded p-2"
+            value={value.city}
+            onChange={(e) => onChange({ ...value, city: e.target.value })}
+            placeholder="City"
+          />
+        </div>
+
+        {/* Business name */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Business name</label>
+          <input
+            className="mt-1 w-full border rounded p-2"
+            value={value.business_name}
+            onChange={(e) => onChange({ ...value, business_name: e.target.value })}
+            placeholder="Business name"
+          />
+        </div>
+
+        {/* Address line 1 */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Address</label>
+          <input
+            className="mt-1 w-full border rounded p-2"
+            value={value.address}
+            onChange={(e) => onChange({ ...value, address: e.target.value })}
+            placeholder="Street, no."
+          />
+        </div>
+
+        {/* Address line 2 */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Address 2 (optional)</label>
+          <input
+            className="mt-1 w-full border rounded p-2"
+            value={value.address2}
+            onChange={(e) => onChange({ ...value, address2: e.target.value })}
+            placeholder="Building, floor, etc."
+          />
+        </div>
+
+        {/* Contact name */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Contact name</label>
+          <input
+            className="mt-1 w-full border rounded p-2"
+            value={value.contact_name}
+            onChange={(e) => onChange({ ...value, contact_name: e.target.value })}
+            placeholder="Contact person"
+          />
+        </div>
+
+        {/* Phone */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Phone</label>
+          <input
+            className="mt-1 w-full border rounded p-2"
+            value={value.phone}
+            onChange={(e) => onChange({ ...value, phone: e.target.value })}
+            placeholder="+46 ..."
+          />
+        </div>
+
+        {/* Email */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Email</label>
+          <input
+            type="email"
+            className="mt-1 w-full border rounded p-2"
+            value={value.email}
+            onChange={(e) => onChange({ ...value, email: e.target.value })}
+            placeholder="email@example.com"
+          />
+        </div>
+
+        {/* Opening hours */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Opening hours</label>
+          <input
+            className="mt-1 w-full border rounded p-2"
+            value={value.opening_hours}
+            onChange={(e) => onChange({ ...value, opening_hours: e.target.value })}
+            placeholder="e.g. Mon–Fri 08:00–16:00"
+          />
+        </div>
+
+        {/* Instructions */}
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium text-gray-700">Instructions to driver</label>
+          <textarea
+            className="mt-1 w-full border rounded p-2"
+            rows={3}
+            value={value.instructions}
+            onChange={(e) => onChange({ ...value, instructions: e.target.value })}
+            placeholder="Gate code, loading dock, forklift on site, etc."
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function BookingForm() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Fallbacks om man går direkt hit
+  const search = location.state?.search ?? {
+    pickup_country: "SE",
+    pickup_postal: "21617",
+    pickup_city: "Limhamn",
+    delivery_country: "DE",
+    delivery_postal: "20457",
+    delivery_city: "Hamburg",
+    goods: [{ type: "Pallet", weight: "150", length: "120", width: "80", height: "60", quantity: 2 }],
+    chargeableWeight: 300,
+  };
+
+  const option = location.state?.option ?? {
+    mode: "road_freight",
+    total_price_eur: 999,
+    earliest_pickup_date: "2025-08-14",
+    transit_time_days: [2, 3],
+    co2_emissions_grams: 123456,
+    description: "Road freight option",
+  };
+
+  // Form state: pickup + delivery (city är redigerbar, country/postal låsta via UI)
+  const [pickup, setPickup] = React.useState({
+    city: search.pickup_city || "",
+    business_name: "",
+    address: "",
+    address2: "",
+    contact_name: "",
+    phone: "",
+    email: "",
+    opening_hours: "",
+    instructions: "",
+  });
+
+  const [delivery, setDelivery] = React.useState({
+    city: search.delivery_city || "",
+    business_name: "",
+    address: "",
+    address2: "",
+    contact_name: "",
+    phone: "",
+    email: "",
+    opening_hours: "",
+    instructions: "",
+  });
+
+  // Referenser & tillval
+  const [refs, setRefs] = React.useState({
+    reference1: "",
+    reference2: "",
+  });
+
+  const [addons, setAddons] = React.useState({
+    tail_lift: false,
+    pre_notice: false,
+  });
+
+  // (Visning) summering av goods
+  const chargeableWeight = Number(search.chargeableWeight ?? 0);
+
+  const totalPieces = (search.goods ?? []).reduce((acc, g) => acc + (Number(g.quantity) || 0), 0);
+  const totalWeight = (search.goods ?? []).reduce(
+    (acc, g) => acc + (Number(g.weight) || 0) * (Number(g.quantity) || 1),
+    0
+  );
+
+  function handleSubmit() {
+    // Vikt-regel: får inte överstiga sökt (prisad) fraktdragande vikt
+    if (totalWeight > chargeableWeight) {
+      alert(
+        `Total weight (${Math.round(totalWeight)} kg) exceeds chargeable weight you searched for (${Math.round(
+          chargeableWeight
+        )} kg). Please adjust.`
+      );
+      return;
+    }
+
+    // Enkel fältvalidering
+    const required = [
+      pickup.business_name,
+      pickup.address,
+      pickup.city,
+      delivery.business_name,
+      delivery.address,
+      delivery.city,
+      pickup.phone,
+      delivery.phone,
+      pickup.email,
+      delivery.email,
+    ];
+    if (required.some((v) => !String(v).trim())) {
+      alert("Please fill in required address and contact fields for pickup and delivery.");
+      return;
+    }
+
+    // Payload för backend (exempel)
+    const payload = {
+      selected_mode: option.mode,
+      price_eur: option.total_price_eur,
+      earliest_pickup: option.earliest_pickup_date,
+      transit_time_days: option.transit_time_days,
+      co2_emissions_grams: option.co2_emissions_grams,
+
+      pickup: {
+        country: search.pickup_country,
+        postal: search.pickup_postal,
+        ...pickup,
+      },
+      delivery: {
+        country: search.delivery_country,
+        postal: search.delivery_postal,
+        ...delivery,
+      },
+
+      goods: search.goods,
+      references: refs,
+      addons,
+    };
+
+    console.log("Booking payload:", payload);
+
+    // TODO: POST till ditt API när endpoint finns (t.ex. /bookings)
+    // fetch("/api/bookings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) })
+
+    alert("✅ Booking captured locally (no API yet). Check console for payload.");
+    navigate("/dashboard");
+  }
+
+  return (
+    <div className="max-w-5xl mx-auto">
+      {/* Breadcrumb / back */}
+      <div className="mb-4">
+        <Link to="/dashboard" className="text-sm text-blue-600 hover:underline">
+          ← Back to dashboard
+        </Link>
+      </div>
+
+      {/* Header */}
+      <h1 className="text-2xl font-bold mb-4">📦 Booking details</h1>
+
+      {/* Summary */}
+      <div className="bg-white border rounded-lg p-4 shadow-sm mb-6">
+        <div className="flex flex-wrap gap-2 items-center">
+          <SummaryBadge
+            label="Route"
+            value={`${search.pickup_country} (${search.pickup_postal}) → ${search.delivery_country} (${search.delivery_postal})`}
+          />
+          <SummaryBadge
+            label="Selected option"
+            value={option.mode.replace(/_/g, " ")}
+          />
+          <SummaryBadge label="Price" value={`${option.total_price_eur} EUR`} />
+          <SummaryBadge label="Earliest pickup" value={option.earliest_pickup_date} />
+          <SummaryBadge
+            label="Transit"
+            value={`${option.transit_time_days?.[0]}–${option.transit_time_days?.[1]} days`}
+          />
+          <SummaryBadge
+            label="CO₂"
+            value={`${(Number(option.co2_emissions_grams || 0) / 1000).toFixed(1)} kg`}
+          />
+        </div>
+
+        {/* Goods mini summary */}
+        <div className="mt-3 text-sm text-gray-700">
+          <span className="mr-3">
+            <strong>Pieces:</strong> {totalPieces}
+          </span>
+          <span className="mr-3">
+            <strong>Total weight:</strong> {Math.round(totalWeight)} kg
+          </span>
+          <span className={totalWeight > chargeableWeight ? "text-red-600 font-semibold" : "text-green-700 font-semibold"}>
+            <strong>Chargeable (priced):</strong> {Math.round(chargeableWeight)} kg
+          </span>
+        </div>
+      </div>
+
+      {/* Address sections */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <AddressSection
+          title="Pickup address"
+          side="pickup"
+          value={pickup}
+          onChange={setPickup}
+          lockedCountry={search.pickup_country}
+          lockedPostal={search.pickup_postal}
+        />
+        <AddressSection
+          title="Delivery address"
+          side="delivery"
+          value={delivery}
+          onChange={setDelivery}
+          lockedCountry={search.delivery_country}
+          lockedPostal={search.delivery_postal}
+        />
+      </div>
+
+      {/* References & add-ons */}
+      <div className="bg-white border rounded-lg p-4 shadow-sm mb-6">
+        <h3 className="text-lg font-semibold mb-3">References & add-ons</h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* References */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Reference 1</label>
+            <input
+              className="mt-1 w-full border rounded p-2"
+              value={refs.reference1}
+              onChange={(e) => setRefs({ ...refs, reference1: e.target.value })}
+              placeholder="Booking reference"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Reference 2</label>
+            <input
+              className="mt-1 w-full border rounded p-2"
+              value={refs.reference2}
+              onChange={(e) => setRefs({ ...refs, reference2: e.target.value })}
+              placeholder="Customer reference"
+            />
+          </div>
+
+          {/* Add-ons */}
+          <div className="md:col-span-2 flex items-center gap-6 mt-2">
+            <label className="inline-flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={addons.tail_lift}
+                onChange={(e) => setAddons({ ...addons, tail_lift: e.target.checked })}
+              />
+              <span>Tail-lift</span>
+            </label>
+            <label className="inline-flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={addons.pre_notice}
+                onChange={(e) => setAddons({ ...addons, pre_notice: e.target.checked })}
+              />
+              <span>Pre-notice</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      {/* Goods recap (read-only) */}
+      <div className="bg-white border rounded-lg p-4 shadow-sm mb-6">
+        <h3 className="text-lg font-semibold mb-3">Goods (from search)</h3>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="text-left text-gray-600 border-b">
+                <th className="py-2 pr-4">Type</th>
+                <th className="py-2 pr-4">Weight (kg)</th>
+                <th className="py-2 pr-4">Length</th>
+                <th className="py-2 pr-4">Width</th>
+                <th className="py-2 pr-4">Height</th>
+                <th className="py-2 pr-4">Qty</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(search.goods ?? []).map((g, i) => (
+                <tr key={i} className="border-b last:border-0">
+                  <td className="py-2 pr-4">{g.type}</td>
+                  <td className="py-2 pr-4">{g.weight}</td>
+                  <td className="py-2 pr-4">{g.length}</td>
+                  <td className="py-2 pr-4">{g.width}</td>
+                  <td className="py-2 pr-4">{g.height}</td>
+                  <td className="py-2 pr-4">{g.quantity}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
       {/* Submit */}
-      <div className="pt-6">
-        <button type="submit" className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-          Confirm Booking
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => navigate(-1)}
+          className="px-4 py-2 rounded border bg-white hover:bg-gray-50"
+        >
+          ← Back
+        </button>
+        <button
+          onClick={handleSubmit}
+          className="px-5 py-2 rounded bg-green-600 text-white font-medium hover:bg-green-700 shadow"
+        >
+          ✅ Confirm booking
         </button>
       </div>
-    </form>
+    </div>
   );
-};
-
-export default BookingForm;
+}
