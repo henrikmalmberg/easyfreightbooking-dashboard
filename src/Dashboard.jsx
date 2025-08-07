@@ -472,47 +472,41 @@ setResult(null);
 {result && (
   <div className="mt-6 bg-white border rounded p-4 shadow-sm">
     <h2 className="font-semibold mb-2">Avaliable freight options</h2>
-	
-	{Object.entries(result)
-		.filter(([_, data]) => data && data.available === true) 
-		.map(([mode, data], i) => (
-			<ResultCard
-				key={i}
-				transport={{
-					mode,
-					total_price: `${data.total_price_eur} EUR`,
-					earliest_pickup: data.earliest_pickup_date,
-					days: `${data.transit_time_days[0]}–${data.transit_time_days[1]}`,
-					co2: data.co2_emissions_grams,
-					description: data.description
-				}}
-				selectedOption={selectedOption}
-				onSelect={setSelectedOption}
-			/>
-		))}
-  
-	{Object.entries(result).filter(([_, data]) => data && data.available === true).length === 0 && (
-		<div className="text-gray-500">No available options found for this route and weight.</div>
-	)}
-	</div>
-)}
 
-    <button
-      onClick={() => handleSelect(selectedOption)}
-      disabled={!selectedOption}
-      className={`mt-4 w-full py-2 rounded font-medium text-white shadow ${
-        selectedOption ? "bg-green-600 hover:bg-green-700" : "bg-gray-300 cursor-not-allowed"
-      }`}
-    >
-      Proceed with selected option
-    </button>
+    {Object.entries(result)
+      .filter(([_, data]) => data && data.available === true)
+      .map(([mode, data], i) => (
+        <ResultCard
+          key={i}
+          transport={{
+            mode,
+            total_price: `${data.total_price_eur} EUR`,
+            earliest_pickup: data.earliest_pickup_date,
+            days: `${data.transit_time_days[0]}–${data.transit_time_days[1]}`,
+            co2: data.co2_emissions_grams,
+            description: data.description,
+          }}
+          selectedOption={selectedOption}
+          onSelect={setSelectedOption}
+        />
+      ))}
 
+    {Object.entries(result).filter(([_, data]) => data && data.available === true).length === 0 && (
+      <div className="text-gray-500">No available options found for this route and weight.</div>
+    )}
   </div>
 )}
 
-   
-  );
-}
+<button
+  onClick={() => handleSelect(selectedOption)}
+  disabled={!selectedOption}
+  className={`mt-4 w-full py-2 rounded font-medium text-white shadow ${
+    selectedOption ? "bg-green-600 hover:bg-green-700" : "bg-gray-300 cursor-not-allowed"
+  }`}
+>
+  Proceed with selected option
+</button>
+
 
 
 
