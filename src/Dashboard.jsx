@@ -331,7 +331,8 @@ setResult(null);
     delivery_country: form.delivery_country,
     delivery_postal_prefix: form.delivery_postal.substring(0, 2),
 
-    chargeable_weight: goods.reduce((sum, g) => {
+    chargeable_weight: Math.round(chargeableWeight),
+  };
       const weight = parseFloat(g.weight);
       return sum + (isNaN(weight) ? 0 : weight * (g.quantity || 1));
     }, 0),
@@ -355,18 +356,35 @@ setResult(null);
 
 
 
-  const handleSelect = (option) => {
+const handleSelect = (option) => {
   if (!option) return;
-  navigate("/confirm", {
+
+  navigate("/new-booking", {
     state: {
-      selectedOption: option,
-      form,
-      goods,
-      cityFrom,
-      cityTo
-    }
+      search: {
+        pickup_country: form.pickup_country,
+        pickup_postal: form.pickup_postal,
+        pickup_city: cityFrom?.city || "",
+        delivery_country: form.delivery_country,
+        delivery_postal: form.delivery_postal,
+        delivery_city: cityTo?.city || "",
+        goods,                    // raderna du fyllde i
+        chargeableWeight,         // fraktdragande vikt
+      },
+      option: {
+        mode: option.mode,
+        total_price_eur: Number(String(option.total_price).replace(" EUR", "")),
+        earliest_pickup_date: option.earliest_pickup,
+        transit_time_days: option.days
+          ? option.days.split("–").map((n) => Number(n))
+          : [null, null],
+        co2_emissions_grams: option.co2,
+        description: option.description,
+      },
+    },
   });
 };
+
 
 
   return (
