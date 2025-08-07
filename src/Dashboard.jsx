@@ -504,6 +504,10 @@ setResult(null);
 
 
   ) 
+  {Object.entries(result).filter(([_, data]) => data && data.available === true).length === 0 && (
+  <div className="text-gray-500">No available options found for this route and weight.</div>
+)}
+
 )}
 
     <button
