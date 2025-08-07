@@ -98,7 +98,7 @@ export default function App() {
         </Routes>
       </Layout>
     </Router>
-  );
+  )
 }
 
 function Dashboard() {
