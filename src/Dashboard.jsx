@@ -333,10 +333,7 @@ setResult(null);
 
     chargeable_weight: Math.round(chargeableWeight),
   };
-      const weight = parseFloat(g.weight);
-      return sum + (isNaN(weight) ? 0 : weight * (g.quantity || 1));
-    }, 0),
-  };
+
 
   try {
     const response = await fetch("https://easyfreightbooking-api.onrender.com/calculate", {
