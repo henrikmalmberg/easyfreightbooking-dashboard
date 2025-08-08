@@ -2,6 +2,13 @@
 import React from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 
+const [updateContact, setUpdateContact] = React.useState({
+  name: loggedInUser.name || "",
+  phone: loggedInUser.phone || "",
+  email: loggedInUser.email || ""
+});
+
+
 function SummaryHeader({ search, option }) {
   return (
     <section className="rounded-lg border bg-white px-6 py-5 shadow-sm">
@@ -260,6 +267,10 @@ export default function BookingForm() {
       );
       return;
     }
+const payload = {
+  ...,
+  update_contact: updateContact
+};
 
     const required = [
       pickup.business_name,
