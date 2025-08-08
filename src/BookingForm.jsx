@@ -266,7 +266,7 @@ const [updateContact, setUpdateContact] = React.useState({
     0
   );
 
-  function handleSubmit() {
+  async function handleSubmit() {
 
     if (!approvals.terms || !approvals.gdpr) {
   alert("Please approve Terms and Conditions and GDPR processing before booking.");
