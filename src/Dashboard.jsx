@@ -171,27 +171,48 @@ function Dashboard() {
                       </div>
                     </div>
 
-                    {isOpen && (
-                      <div className="mt-3 pl-2 border-l border-gray-200 text-sm text-gray-600 space-y-1">
-                        <div>Mode: {b.selected_mode?.replaceAll("_", " ") || "—"}</div>
-                        <div>
-                          Price:{" "}
-                          {typeof b.price_eur === "number"
-                            ? `${b.price_eur.toFixed(0)} EUR`
-                            : "—"}
-                        </div>
-                        <div>
-                          Date:{" "}
-                          {b.created_at ? new Date(b.created_at).toLocaleString() : ""}
-                        </div>
-                        <div>
-                          CO₂:{" "}
-                          {b.co2_emissions
-                            ? `${(Number(b.co2_emissions) / 1000).toFixed(1)} kg`
-                            : ""}
-                        </div>
-                      </div>
-                    )}
+{isOpen && (
+  <div className="mt-3 pl-2 border-l border-gray-200 text-sm text-gray-600 space-y-1">
+    <div>Mode: {b.selected_mode?.replaceAll("_", " ") || "—"}</div>
+    <div>Price: {typeof b.price_eur === "number" ? `${b.price_eur.toFixed(0)} EUR` : "—"}</div>
+    
+    {/* Alla datumfält */}
+    {b.created_at && (
+      <div>Created: {new Date(b.created_at).toLocaleString()}</div>
+    )}
+    {b.earliest_pickup_date && (
+      <div>Earliest pickup: {new Date(b.earliest_pickup_date).toLocaleDateString()}</div>
+    )}
+    {b.requested_pickup_date && (
+      <div>Requested pickup: {new Date(b.requested_pickup_date).toLocaleDateString()}</div>
+    )}
+    {b.requested_delivery_date && (
+      <div>Requested delivery: {new Date(b.requested_delivery_date).toLocaleDateString()}</div>
+    )}
+
+    {/* Godsparametrar */}
+    {Array.isArray(b.goods) && b.goods.map((g, idx) => (
+      <div key={idx} className="ml-2">
+        📦 Goods #{idx + 1}: {g.weight} kg, {g.length} cm × {g.width} cm × {g.height} cm, qty: {g.quantity}
+      </div>
+    ))}
+
+    {/* Fraktdragande vikt */}
+    {b.chargeable_weight_kg && (
+      <div>
+        📏 Chargeable weight: {b.chargeable_weight_kg} kg
+      </div>
+    )}
+
+    {/* CO₂ — OBS: justera faktorn här om API redan returnerar kg */}
+    {b.co2_emissions && (
+      <div>
+        🌍 CO₂: {((Number(b.co2_emissions)).toFixed(1))} kg
+      </div>
+    )}
+  </div>
+)}
+
                   </li>
                 );
               })}
