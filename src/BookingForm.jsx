@@ -2,9 +2,6 @@
 import React from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 
-
-
-
 function SummaryHeader({ search, option }) {
   return (
     <section className="rounded-lg border bg-white px-6 py-5 shadow-sm">
