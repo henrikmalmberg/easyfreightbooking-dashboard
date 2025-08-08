@@ -197,6 +197,12 @@ export default function BookingForm() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const [approvals, setApprovals] = React.useState({
+  terms: false,
+  gdpr: false
+});
+
+
 const loggedInUser = location.state?.user ?? { name: "", phone: "", email: "" };
 const [updateContact, setUpdateContact] = React.useState({
   name: loggedInUser.name,
@@ -260,6 +266,11 @@ const [updateContact, setUpdateContact] = React.useState({
   );
 
   function handleSubmit() {
+    if (!approvals.terms || !approvals.gdpr) {
+  alert("Please approve Terms and Conditions and GDPR processing before booking.");
+  return;
+}
+
     if (totalWeight > chargeableWeight) {
       alert(
         `Total weight (${Math.round(totalWeight)} kg) exceeds chargeable weight you searched for (${Math.round(
@@ -422,18 +433,50 @@ const payload = {
 </div>
 
 
-      {/* Submit */}
-      <div className="flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="px-4 py-2 rounded border bg-white hover:bg-gray-50">
-          ← Back
-        </button>
-        <button
-          onClick={handleSubmit}
-          className="px-5 py-2 rounded bg-green-600 text-white font-medium hover:bg-green-700 shadow"
-        >
-          ✅ Confirm booking
-        </button>
-      </div>
+{/* Submit */}
+<div className="flex flex-wrap items-center gap-4">
+  <button
+    onClick={() => navigate(-1)}
+    className="px-4 py-2 rounded border bg-white hover:bg-gray-50"
+  >
+    ← Back
+  </button>
+
+  <button
+    onClick={handleSubmit}
+    disabled={!approvals.terms || !approvals.gdpr}
+    className={`px-5 py-2 rounded text-white font-medium shadow ${
+      !approvals.terms || !approvals.gdpr
+        ? "bg-gray-400 cursor-not-allowed"
+        : "bg-green-600 hover:bg-green-700"
+    }`}
+  >
+    ✅ Confirm booking
+  </button>
+
+  <label className="inline-flex items-center gap-2">
+    <input
+      type="checkbox"
+      checked={approvals.terms}
+      onChange={(e) => setApprovals({ ...approvals, terms: e.target.checked })}
+    />
+    <span>
+      I approve <a href="/terms" target="_blank" className="text-blue-600 underline">Terms and Conditions</a>
+    </span>
+  </label>
+
+  <label className="inline-flex items-center gap-2">
+    <input
+      type="checkbox"
+      checked={approvals.gdpr}
+      onChange={(e) => setApprovals({ ...approvals, gdpr: e.target.checked })}
+    />
+    <span>
+      I approve processing of details according to <a href="/gdpr" target="_blank" className="text-blue-600 underline">general GDPR terms</a>
+    </span>
+  </label>
+</div>
+
     </div>
   );
 }
