@@ -1,4 +1,4 @@
-// src/BookingForm.jsx
+B// src/BookingForm.jsx
 import React from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 
@@ -472,7 +472,7 @@ const payload = {
       onChange={(e) => setApprovals({ ...approvals, gdpr: e.target.checked })}
     />
     <span>
-      I approve processing of details according to <a href="/gdpr" target="_blank" className="text-blue-600 underline">general GDPR terms</a>
+      I approve EFB <a href="/gdpr" target="_blank" className="text-blue-600 underline">general GDPR terms</a>
     </span>
   </label>
 </div>
