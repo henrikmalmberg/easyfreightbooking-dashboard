@@ -2,11 +2,7 @@
 import React from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 
-const [updateContact, setUpdateContact] = React.useState({
-  name: loggedInUser.name || "",
-  phone: loggedInUser.phone || "",
-  email: loggedInUser.email || ""
-});
+
 
 
 function SummaryHeader({ search, option }) {
@@ -204,6 +200,12 @@ export default function BookingForm() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const [updateContact, setUpdateContact] = React.useState({
+  name: loggedInUser.name || "",
+  phone: loggedInUser.phone || "",
+  email: loggedInUser.email || ""
+});
+
   const search = location.state?.search ?? {
     pickup_country: "SE",
     pickup_postal: "21617",
@@ -267,10 +269,6 @@ export default function BookingForm() {
       );
       return;
     }
-const payload = {
-  ...,
-  update_contact: updateContact
-};
 
     const required = [
       pickup.business_name,
