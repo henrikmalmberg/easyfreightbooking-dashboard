@@ -128,53 +128,50 @@ function Dashboard() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">📦 My bookings</h1>
-        <Link
-          to="/new-booking"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
-        >
-          + New booking
-        </Link>
-      </div>
+      
+		
+{Array.isArray(bookings) && bookings.length > 0 && (
+  <div className="bg-white shadow rounded-lg">
+    <ul className="divide-y divide-gray-200">
+      {bookings.map((b) => {
+        const from = b.sender_address;
+        const to = b.receiver_address;
+        const route = from && to
+          ? `${from.country_code} ${from.postal_code || ""} ${from.city || ""} → ${to.country_code} ${to.postal_code || ""} ${to.city || ""}`
+          : "–";
 
-      {bookings === null && <div className="text-gray-500">Loading…</div>}
-
-      {Array.isArray(bookings) && bookings.length === 0 && (
-        <div className="text-gray-500">No bookings yet.</div>
-      )}
-
-      {Array.isArray(bookings) && bookings.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {bookings.map((b) => {
-            const from = b.sender_address;
-            const to = b.receiver_address;
-            const route = from && to
-              ? `${from.country_code} ${from.postal_code || ""} ${from.city || ""} → ${to.country_code} ${to.postal_code || ""} ${to.city || ""}`
-              : "–";
-            return (
-              <div
-                key={b.id}
-                className="rounded-xl border bg-white p-5 shadow hover:shadow-md transition-shadow"
-              >
-                <div className="text-sm text-gray-500 mb-1">
-                  #{b.id.slice(0, 8)} • {b.selected_mode?.replaceAll("_"," ") || "—"}
-                </div>
-                <div className="text-lg font-semibold text-gray-800">{route}</div>
-                <div className="text-sm text-gray-600 mt-2">
-                  {b.created_at ? new Date(b.created_at).toLocaleString() : ""}
-                  <br />
-                  {b.co2_emissions ? `${(Number(b.co2_emissions)/1000).toFixed(1)} kg CO₂` : ""}
-                  <br />
-                  <strong className="text-blue-600">
-                    {typeof b.price_eur === "number" ? `${b.price_eur.toFixed(0)} EUR` : "—"}
-                  </strong>
-                </div>
+        return (
+          <li
+            key={b.id}
+            className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition"
+          >
+            <div>
+              <div className="text-sm text-gray-500">
+                #{b.id.slice(0, 8)} • {b.selected_mode?.replaceAll("_", " ") || "—"}
               </div>
-            );
-          })}
-        </div>
-      )}
+              <div className="font-medium text-gray-900">{route}</div>
+              <div className="text-sm text-gray-500">
+                {b.created_at ? new Date(b.created_at).toLocaleString() : ""}
+                {" • "}
+                {b.co2_emissions ? `${(Number(b.co2_emissions) / 1000).toFixed(1)} kg CO₂` : ""}
+              </div>
+            </div>
+            <div className="font-semibold text-blue-600 text-right min-w-[70px]">
+              {typeof b.price_eur === "number"
+                ? `${b.price_eur.toFixed(0)} EUR`
+                : "—"}
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  </div>
+)}
+
+
+
+
+		
     </div>
   );
 }
