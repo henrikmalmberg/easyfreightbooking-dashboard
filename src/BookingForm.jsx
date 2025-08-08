@@ -60,7 +60,7 @@ function SummaryHeader({ search, option }) {
         <InfoItem
           label="Chargeable weight"
           value={`${Math.round(search.chargeableWeight)} kg`}
-          emphasize
+          //emphasize
         />
       </div>
     </section>
