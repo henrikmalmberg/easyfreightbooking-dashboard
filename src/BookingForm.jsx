@@ -355,20 +355,6 @@ export default function BookingForm() {
 </div>
 
 
-        {/* Goods mini summary */}
-        <div className="mt-3 text-sm text-gray-700">
-          <span className="mr-3">
-            <strong>Pieces:</strong> {totalPieces}
-          </span>
-          <span className="mr-3">
-            <strong>Total weight:</strong> {Math.round(totalWeight)} kg
-          </span>
-          <span className={totalWeight > chargeableWeight ? "text-red-600 font-semibold" : "text-green-700 font-semibold"}>
-            <strong>Chargeable (priced):</strong> {Math.round(chargeableWeight)} kg
-          </span>
-        </div>
-      </div>
-
       {/* Address sections */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <AddressSection
