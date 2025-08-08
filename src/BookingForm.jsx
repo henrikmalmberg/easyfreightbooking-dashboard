@@ -373,24 +373,30 @@ const payload = {
             />
           </div>
 
-          <div className="md:col-span-2 flex items-center gap-6 mt-2">
-            <label className="inline-flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={addons.tail_lift}
-                onChange={(e) => setAddons({ ...addons, tail_lift: e.target.checked })}
-              />
-              <span>Tail-lift</span>
-            </label>
-            <label className="inline-flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={addons.pre_notice}
-                onChange={(e) => setAddons({ ...addons, pre_notice: e.target.checked })}
-              />
-              <span>Pre-notice</span>
-            </label>
-          </div>
+<div className="md:col-span-2 mt-4">
+  <h4 className="text-sm font-medium text-gray-700">Add-ons</h4>
+  <p className="text-xs text-gray-500 mb-2">Additional costs may apply.</p>
+  
+  <div className="flex flex-wrap items-center gap-6">
+    <label className="inline-flex items-center gap-2">
+      <input
+        type="checkbox"
+        checked={addons.tail_lift}
+        onChange={(e) => setAddons({ ...addons, tail_lift: e.target.checked })}
+      />
+      <span>Tail-lift</span>
+    </label>
+    <label className="inline-flex items-center gap-2">
+      <input
+        type="checkbox"
+        checked={addons.pre_notice}
+        onChange={(e) => setAddons({ ...addons, pre_notice: e.target.checked })}
+      />
+      <span>Pre-notice</span>
+    </label>
+  </div>
+</div>
+
         </div>
       </div>
 
