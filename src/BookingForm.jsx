@@ -204,6 +204,7 @@ export default function BookingForm() {
 
 
 const loggedInUser = location.state?.user ?? { name: "", phone: "", email: "" };
+const booker = { name: loggedInUser.name, email: loggedInUser.email, phone: loggedInUser.phone };
 const [updateContact, setUpdateContact] = React.useState({
   name: loggedInUser.name,
   phone: loggedInUser.phone,
@@ -266,6 +267,7 @@ const [updateContact, setUpdateContact] = React.useState({
   );
 
   function handleSubmit() {
+
     if (!approvals.terms || !approvals.gdpr) {
   alert("Please approve Terms and Conditions and GDPR processing before booking.");
   return;
@@ -308,14 +310,24 @@ const payload = {
   goods: search.goods,
   references: refs,
   addons,
-  update_contact: updateContact,   // ← lägg till denna rad
+  update_contact: updateContact,  
+  booker,
 };
 
-
-    console.log("Booking payload:", payload);
-    alert("✅ Booking captured locally (no API yet). Check console for payload.");
+try {
+    const res = await fetch("https://easyfreightbooking-api.onrender.com/book", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    alert("✅ Booking sent. You'll receive a confirmation email shortly.");
     navigate("/dashboard");
+  } catch (err) {
+    console.error(err);
+    alert("Could not send booking. Please try again.");
   }
+}
 
   return (
     <div className="max-w-5xl mx-auto">
