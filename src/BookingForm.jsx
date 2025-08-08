@@ -301,7 +301,7 @@ export default function BookingForm() {
         </Link>
       </div>
 
-      <h1 className="text-2xl font-bold mb-4">📦 Booking details</h1>
+      <h1 className="text-2xl font-bold mb-4">📦 Finalize booking</h1>
 
       {/* Summary (business style) */}
       <div className="mb-6">
