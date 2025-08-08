@@ -87,7 +87,6 @@ function AddressSection({
   onChange,
   lockedCountry,
   lockedPostal,
-  // new (optional) props — fine to omit for Delivery section
   schedule,
   onScheduleChange,
   scheduleLabel,
@@ -202,17 +201,8 @@ function AddressSection({
         {/* Scheduling (optional) */}
         {schedule && onScheduleChange && (
           <div className="md:col-span-2 mt-4 border-t pt-3">
-            <label className="inline-flex items-center gap-2 mb-2">
-              <input
-                type="checkbox"
-                checked={schedule.asap}
-                onChange={(e) => onScheduleChange({ ...schedule, asap: e.target.checked })}
-              />
-              <span>As soon as possible</span>
-            </label>
-
             <label className={`block text-sm font-medium text-gray-700 ${schedule.asap ? "opacity-50" : ""}`}>
-              {scheduleLabel || "Requested pickup date"}
+              {scheduleLabel || "Requested date"}
             </label>
             <input
               type="date"
@@ -222,12 +212,22 @@ function AddressSection({
               onChange={(e) => onScheduleChange({ ...schedule, date: e.target.value })}
               min={new Date().toISOString().slice(0, 10)}
             />
+
+            <label className="inline-flex items-center gap-2 mt-3">
+              <input
+                type="checkbox"
+                checked={schedule.asap}
+                onChange={(e) => onScheduleChange({ ...schedule, asap: e.target.checked })}
+              />
+              <span>As soon as possible</span>
+            </label>
           </div>
         )}
-      </div>{/* ← closes the grid */}
+      </div>
     </div>
   );
 }
+
 
 
 
@@ -410,13 +410,17 @@ try {
   scheduleLabel="Requested pickup date"
 />
 
-        <AddressSection
-          title="Delivery address"
-          value={delivery}
-          onChange={setDelivery}
-          lockedCountry={search.delivery_country}
-          lockedPostal={search.delivery_postal}
-        />
+<AddressSection
+  title="Delivery address"
+  value={delivery}
+  onChange={setDelivery}
+  lockedCountry={search.delivery_country}
+  lockedPostal={search.delivery_postal}
+  schedule={deliverySchedule}
+  onScheduleChange={setDeliverySchedule}
+  scheduleLabel="Requested delivery date"
+/>
+
       </div>
 
       {/* References & add-ons */}
