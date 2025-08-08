@@ -105,6 +105,7 @@ export default function App() {
 
 function Dashboard() {
   const [bookings, setBookings] = React.useState(null); // null = loading
+  const [openId, setOpenId] = React.useState(null); // ✅ Hanterar utfällning
   let userId = 1;
   try {
     userId = window.loggedInUserId || 1;
@@ -132,63 +133,71 @@ function Dashboard() {
 		
 import { useState } from "react";
 
-{Array.isArray(bookings) && bookings.length > 0 && (
-  <>
-    <h1 className="text-3xl font-bold mb-4">📦 My bookings</h1>
-    <div className="bg-white shadow rounded-lg max-w-4xl">
-      <ul className="divide-y divide-gray-200">
-        {bookings.map((b) => {
-          const [open, setOpen] = useState(false);
-          const from = b.sender_address;
-          const to = b.receiver_address;
-          const routeFrom = from
-            ? `${from.country_code} ${from.postal_code || ""} ${from.city || ""}`
-            : "–";
-          const routeTo = to
-            ? `${to.country_code} ${to.postal_code || ""} ${to.city || ""}`
-            : "–";
+ {Array.isArray(bookings) && bookings.length > 0 && (
+        <>
+          <h1 className="text-3xl font-bold mb-4">📦 My bookings</h1>
+          <div className="bg-white shadow rounded-lg max-w-4xl">
+            <ul className="divide-y divide-gray-200">
+              {bookings.map((b) => {
+                const from = b.sender_address;
+                const to = b.receiver_address;
+                const routeFrom = from
+                  ? `${from.country_code} ${from.postal_code || ""} ${from.city || ""}`
+                  : "–";
+                const routeTo = to
+                  ? `${to.country_code} ${to.postal_code || ""} ${to.city || ""}`
+                  : "–";
 
-          return (
-            <li key={b.id} className="px-4 py-4 hover:bg-gray-50 transition">
-              {/* Kompakt rad */}
-              <div className="flex items-center justify-between cursor-pointer"
-                   onClick={() => setOpen(!open)}>
-                <div className="flex flex-col">
-                  <span className="text-sm text-gray-500">#{b.id.slice(0, 8)}</span>
-                  <span className="font-medium text-gray-800">
-                    {routeFrom} → {routeTo}
-                  </span>
-                </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-sm text-gray-600">
-                    {b.chargeable_weight_kg
-                      ? `${b.chargeable_weight_kg} kg`
-                      : ""}
-                  </span>
-                  <span className="text-gray-400">
-                    {open ? "▲" : "▼"}
-                  </span>
-                </div>
-              </div>
+                const isOpen = openId === b.id;
 
-              {/* Utfällbar detaljvy */}
-              {open && (
-                <div className="mt-3 pl-2 border-l border-gray-200 text-sm text-gray-600 space-y-1">
-                  <div>Mode: {b.selected_mode?.replaceAll("_", " ") || "—"}</div>
-                  <div>Price: {typeof b.price_eur === "number" ? `${b.price_eur.toFixed(0)} EUR` : "—"}</div>
-                  <div>Date: {b.created_at ? new Date(b.created_at).toLocaleString() : ""}</div>
-                  <div>CO₂: {b.co2_emissions ? `${(Number(b.co2_emissions) / 1000).toFixed(1)} kg` : ""}</div>
-                  {/* Lägg till fler detaljer här om du vill */}
-                </div>
-              )}
-            </li>
-          );
-        })}
-      </ul>
-    </div>
-  </>
-)}
+                return (
+                  <li key={b.id} className="px-4 py-4 hover:bg-gray-50 transition">
+                    <div
+                      className="flex items-center justify-between cursor-pointer"
+                      onClick={() => setOpenId(isOpen ? null : b.id)}
+                    >
+                      <div className="flex flex-col">
+                        <span className="text-sm text-gray-500">#{b.id.slice(0, 8)}</span>
+                        <span className="font-medium text-gray-800">
+                          {routeFrom} → {routeTo}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <span className="text-sm text-gray-600">
+                          {b.chargeable_weight_kg ? `${b.chargeable_weight_kg} kg` : ""}
+                        </span>
+                        <span className="text-gray-400">{isOpen ? "▲" : "▼"}</span>
+                      </div>
+                    </div>
 
+                    {isOpen && (
+                      <div className="mt-3 pl-2 border-l border-gray-200 text-sm text-gray-600 space-y-1">
+                        <div>Mode: {b.selected_mode?.replaceAll("_", " ") || "—"}</div>
+                        <div>
+                          Price:{" "}
+                          {typeof b.price_eur === "number"
+                            ? `${b.price_eur.toFixed(0)} EUR`
+                            : "—"}
+                        </div>
+                        <div>
+                          Date:{" "}
+                          {b.created_at ? new Date(b.created_at).toLocaleString() : ""}
+                        </div>
+                        <div>
+                          CO₂:{" "}
+                          {b.co2_emissions
+                            ? `${(Number(b.co2_emissions) / 1000).toFixed(1)} kg`
+                            : ""}
+                        </div>
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </>
+      )}
 
 
 
