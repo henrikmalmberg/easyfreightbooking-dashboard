@@ -7,7 +7,7 @@ function SummaryHeader({ search, option }) {
     <section className="rounded-lg border bg-white px-6 py-5 shadow-sm">
       <div className="flex items-start justify-between gap-6">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Finalize booking</h2>
+          <h2 className="text-xl font-semibold text-gray-900">Booking details/h2>
           <p className="mt-1 text-sm text-gray-500">
             {search.pickup_country} ({search.pickup_postal}
             {search.pickup_city ? ` ${search.pickup_city}` : ""}) →{" "}
