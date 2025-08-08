@@ -2,6 +2,9 @@
 import React from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 
+let userId = 1;
+try { userId = window.loggedInUserId || 1; } catch {}
+
 function SummaryHeader({ search, option }) {
   return (
     <section className="rounded-lg border bg-white px-6 py-5 shadow-sm">
@@ -366,6 +369,12 @@ const payload = {
   references: refs,
   addons,
   update_contact: updateContact,
+
+  user_id: String(userId),     // NEW ← viktigt för att koppla till rätt användare
+  asap_pickup: pickupSchedule.asap,
+  requested_pickup_date: pickupSchedule.asap ? null : pickupSchedule.date,
+  asap_delivery: deliverySchedule.asap,
+  requested_delivery_date: deliverySchedule.asap ? null : deliverySchedule.date,
 
   // NEW:
   asap_pickup: pickupSchedule.asap,
