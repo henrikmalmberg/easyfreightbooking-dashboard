@@ -188,7 +188,45 @@ function AddressSection({ title, value, onChange, lockedCountry, lockedPostal })
             placeholder="Gate code, loading dock, forklift on site, etc."
           />
         </div>
+
+      <div className="md:col-span-2">
+        <label className="block text-sm font-medium text-gray-700">Instructions to driver</label>
+        <textarea
+          className="mt-1 w-full border rounded p-2"
+          rows={3}
+          value={value.instructions}
+          onChange={(e) => onChange({ ...value, instructions: e.target.value })}
+          placeholder="Gate code, loading dock, forklift on site, etc."
+        />
       </div>
+
+      {/* --- Scheduling block --- */}
+      {schedule && onScheduleChange && (
+        <div className="md:col-span-2 mt-4 border-t pt-3">
+          <label className="inline-flex items-center gap-2 mb-2">
+            <input
+              type="checkbox"
+              checked={schedule.asap}
+              onChange={(e) => onScheduleChange({ ...schedule, asap: e.target.checked })}
+            />
+            <span>As soon as possible</span>
+          </label>
+
+          <label
+            className={`block text-sm font-medium text-gray-700 ${schedule.asap ? "opacity-50" : ""}`}
+          >
+            {scheduleLabel || "Requested pickup date"}
+          </label>
+          <input
+            type="date"
+            className="mt-1 w-full border rounded p-2"
+            disabled={schedule.asap}
+            value={schedule.date}
+            onChange={(e) => onScheduleChange({ ...schedule, date: e.target.value })}
+            min={new Date().toISOString().slice(0, 10)}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -196,6 +234,10 @@ function AddressSection({ title, value, onChange, lockedCountry, lockedPostal })
 export default function BookingForm() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [pickupSchedule, setPickupSchedule] = React.useState({
+    asap: true,
+    date: "" // YYYY-MM-DD
+  });
 
   const [approvals, setApprovals] = React.useState({
   terms: false,
