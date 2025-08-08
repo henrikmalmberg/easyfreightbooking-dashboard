@@ -197,11 +197,13 @@ export default function BookingForm() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [updateContact, setUpdateContact] = React.useState({
-  name: loggedInUser.name || "",
-  phone: loggedInUser.phone || "",
-  email: loggedInUser.email || ""
+const loggedInUser = location.state?.user ?? { name: "", phone: "", email: "" };
+const [updateContact, setUpdateContact] = React.useState({
+  name: loggedInUser.name,
+  phone: loggedInUser.phone,
+  email: loggedInUser.email
 });
+
 
   const search = location.state?.search ?? {
     pickup_country: "SE",
@@ -284,18 +286,20 @@ export default function BookingForm() {
       return;
     }
 
-    const payload = {
-      selected_mode: option.mode,
-      price_eur: option.total_price_eur,
-      earliest_pickup: option.earliest_pickup_date,
-      transit_time_days: option.transit_time_days,
-      co2_emissions_grams: option.co2_emissions_grams,
-      pickup: { country: search.pickup_country, postal: search.pickup_postal, ...pickup },
-      delivery: { country: search.delivery_country, postal: search.delivery_postal, ...delivery },
-      goods: search.goods,
-      references: refs,
-      addons,
-    };
+const payload = {
+  selected_mode: option.mode,
+  price_eur: option.total_price_eur,
+  earliest_pickup: option.earliest_pickup_date,
+  transit_time_days: option.transit_time_days,
+  co2_emissions_grams: option.co2_emissions_grams,
+  pickup: { country: search.pickup_country, postal: search.pickup_postal, ...pickup },
+  delivery: { country: search.delivery_country, postal: search.delivery_postal, ...delivery },
+  goods: search.goods,
+  references: refs,
+  addons,
+  update_contact: updateContact,   // ← lägg till denna rad
+};
+
 
     console.log("Booking payload:", payload);
     alert("✅ Booking captured locally (no API yet). Check console for payload.");
