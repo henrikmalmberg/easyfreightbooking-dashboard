@@ -24,45 +24,48 @@ function SummaryHeader({ search, option }) {
         </div>
       </div>
 
-      <div className="mt-4 border-t pt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
-        <InfoItem label="Selected product" value={option.mode.replace("_", " ")} />
-        <InfoItem label="Earliest pickup" value={option.earliest_pickup_date} />
-        <InfoItem
-          label="Transit"
-          value={
-            Array.isArray(option.transit_time_days)
-              ? `${option.transit_time_days[0]}–${option.transit_time_days[1]} days`
-              : option.transit_time_days
-          }
-        />
-        <InfoItem
-          label="CO₂ (est.)"
-          value={`${(option.co2_emissions_grams / 1000).toFixed(1)} kg`}
-        />
-      </div>
+{/* Översta raden */}
+<div className="mt-4 border-t pt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+  <InfoItem label="Selected product" value={option.mode.replace("_", " ")} />
+  <InfoItem label="Earliest pickup" value={option.earliest_pickup_date} />
+  <InfoItem
+    label="Transit"
+    value={
+      Array.isArray(option.transit_time_days)
+        ? `${option.transit_time_days[0]}–${option.transit_time_days[1]} days`
+        : option.transit_time_days
+    }
+  />
+  <InfoItem
+    label="CO₂ (est.)"
+    value={`${(option.co2_emissions_grams / 1000).toFixed(1)} kg`}
+  />
+</div>
 
-      <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-        <InfoItem
-          label="Quantity"
-          value={String(
-            search.goods?.reduce((a, g) => a + (Number(g.quantity) || 0), 0) || 1
-          )}
-        />
-        <InfoItem
-          label="Total weight"
-          value={`${Math.round(
-            search.goods?.reduce(
-              (a, g) => a + (Number(g.weight) || 0) * (Number(g.quantity) || 1),
-              0
-            ) || 0
-          )} kg`}
-        />
-        <InfoItem
-          label="Chargeable weight"
-          value={`${Math.round(search.chargeableWeight)} kg`}
-          //emphasize
-        />
-      </div>
+{/* Andra raden */}
+<div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+  <InfoItem
+    label="Quantity"
+    value={String(
+      search.goods?.reduce((a, g) => a + (Number(g.quantity) || 0), 0) || 1
+    )}
+  />
+  <InfoItem
+    label="Total weight"
+    value={`${Math.round(
+      search.goods?.reduce(
+        (a, g) => a + (Number(g.weight) || 0) * (Number(g.quantity) || 1),
+        0
+      ) || 0
+    )} kg`}
+  />
+  <InfoItem
+    label="Chargeable weight" // <-- ändrad rubrik
+    value={`${Math.round(search.chargeableWeight)} kg`}
+  />
+  <div /> {/* Tom för att fylla ut sista kolumnen */}
+</div>
+
     </section>
   );
 }
