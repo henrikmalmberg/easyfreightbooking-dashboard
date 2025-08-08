@@ -314,6 +314,10 @@ const [updateContact, setUpdateContact] = React.useState({
   alert("Please approve Terms and Conditions and GDPR processing before booking.");
   return;
 }
+if (!pickupSchedule.asap && !pickupSchedule.date) {
+  alert('Please select a "Requested pickup date" or check "As soon as possible".');
+  return;
+}
 
     if (totalWeight > chargeableWeight) {
       alert(
@@ -352,9 +356,12 @@ const payload = {
   goods: search.goods,
   references: refs,
   addons,
-  update_contact: updateContact,  
-  booker,
+  update_contact: updateContact,
+  // NEW:
+  asap_pickup: pickupSchedule.asap,
+  requested_pickup_date: pickupSchedule.asap ? null : pickupSchedule.date,
 };
+
 
 try {
     const res = await fetch("https://easyfreightbooking-api.onrender.com/book", {
@@ -388,13 +395,17 @@ try {
 
       {/* Address sections */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <AddressSection
-          title="Pickup address"
-          value={pickup}
-          onChange={setPickup}
-          lockedCountry={search.pickup_country}
-          lockedPostal={search.pickup_postal}
-        />
+<AddressSection
+  title="Pickup address"
+  value={pickup}
+  onChange={setPickup}
+  lockedCountry={search.pickup_country}
+  lockedPostal={search.pickup_postal}
+  schedule={pickupSchedule}
+  onScheduleChange={setPickupSchedule}
+  scheduleLabel="Requested pickup date"
+/>
+
         <AddressSection
           title="Delivery address"
           value={delivery}
