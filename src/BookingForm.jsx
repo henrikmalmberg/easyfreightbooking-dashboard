@@ -373,36 +373,44 @@ export default function BookingForm() {
         </div>
       </div>
 
-      {/* Goods recap (read-only) */}
-      <div className="bg-white border rounded-lg p-4 shadow-sm mb-6">
-        <h3 className="text-lg font-semibold mb-3">Goods (from search)</h3>
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="text-left text-gray-600 border-b">
-                <th className="py-2 pr-4">Type</th>
-                <th className="py-2 pr-4">Weight (kg)</th>
-                <th className="py-2 pr-4">Length</th>
-                <th className="py-2 pr-4">Width</th>
-                <th className="py-2 pr-4">Height</th>
-                <th className="py-2 pr-4">Qty</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(search.goods ?? []).map((g, i) => (
-                <tr key={i} className="border-b last:border-0">
-                  <td className="py-2 pr-4">{g.type}</td>
-                  <td className="py-2 pr-4">{g.weight}</td>
-                  <td className="py-2 pr-4">{g.length}</td>
-                  <td className="py-2 pr-4">{g.width}</td>
-                  <td className="py-2 pr-4">{g.height}</td>
-                  <td className="py-2 pr-4">{g.quantity}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+{/* Contact for transport updates */}
+<div className="bg-white border rounded-lg p-4 shadow-sm mb-6">
+  <h3 className="text-lg font-semibold mb-3">Contact for transport updates</h3>
+  <p className="text-sm text-gray-500 mb-4">
+    Specify who should receive notifications about this shipment. This can be you or someone else.
+  </p>
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div>
+      <label className="block text-sm font-medium text-gray-700">Name</label>
+      <input
+        className="mt-1 w-full border rounded p-2"
+        value={updateContact.name}
+        onChange={(e) => setUpdateContact({ ...updateContact, name: e.target.value })}
+        placeholder="Full name"
+      />
+    </div>
+    <div>
+      <label className="block text-sm font-medium text-gray-700">Phone</label>
+      <input
+        className="mt-1 w-full border rounded p-2"
+        value={updateContact.phone}
+        onChange={(e) => setUpdateContact({ ...updateContact, phone: e.target.value })}
+        placeholder="+46 ..."
+      />
+    </div>
+    <div>
+      <label className="block text-sm font-medium text-gray-700">Email</label>
+      <input
+        type="email"
+        className="mt-1 w-full border rounded p-2"
+        value={updateContact.email}
+        onChange={(e) => setUpdateContact({ ...updateContact, email: e.target.value })}
+        placeholder="email@example.com"
+      />
+    </div>
+  </div>
+</div>
+
 
       {/* Submit */}
       <div className="flex items-center gap-3">
