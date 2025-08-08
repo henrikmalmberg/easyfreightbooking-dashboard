@@ -104,13 +104,27 @@ export default function App() {
 }
 
 function Dashboard() {
-  const [bookings, setBookings] = React.useState([]);
+  const [bookings, setBookings] = React.useState(null); // null = loading
   let userId = 1;
   try {
     userId = window.loggedInUserId || 1;
-  } catch (e) {
-    console.warn("window.loggedInUserId not found – using fallback ID 1");
-  }
+  } catch {}
+
+  React.useEffect(() => {
+    let abort = false;
+    async function load() {
+      try {
+        const res = await fetch(`https://easyfreightbooking-api.onrender.com/bookings?user_id=${userId}`);
+        const data = await res.json();
+        if (!abort) setBookings(data);
+      } catch (e) {
+        console.error(e);
+        if (!abort) setBookings([]);
+      }
+    }
+    load();
+    return () => { abort = true; };
+  }, [userId]);
 
   return (
     <div>
@@ -124,33 +138,47 @@ function Dashboard() {
         </Link>
       </div>
 
-      {bookings.length === 0 ? (
+      {bookings === null && <div className="text-gray-500">Loading…</div>}
+
+      {Array.isArray(bookings) && bookings.length === 0 && (
         <div className="text-gray-500">No bookings yet.</div>
-      ) : (
+      )}
+
+      {Array.isArray(bookings) && bookings.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {bookings.map((booking) => (
-            <div
-              key={booking.id}
-              className="rounded-xl border bg-white p-5 shadow hover:shadow-md transition-shadow"
-            >
-              <div className="text-sm text-gray-500 mb-1">
-                #{booking.id} – {booking.transport_type}
+          {bookings.map((b) => {
+            const from = b.sender_address;
+            const to = b.receiver_address;
+            const route = from && to
+              ? `${from.country_code} ${from.postal_code || ""} ${from.city || ""} → ${to.country_code} ${to.postal_code || ""} ${to.city || ""}`
+              : "–";
+            return (
+              <div
+                key={b.id}
+                className="rounded-xl border bg-white p-5 shadow hover:shadow-md transition-shadow"
+              >
+                <div className="text-sm text-gray-500 mb-1">
+                  #{b.id.slice(0, 8)} • {b.selected_mode?.replaceAll("_"," ") || "—"}
+                </div>
+                <div className="text-lg font-semibold text-gray-800">{route}</div>
+                <div className="text-sm text-gray-600 mt-2">
+                  {b.created_at ? new Date(b.created_at).toLocaleString() : ""}
+                  <br />
+                  {b.co2_emissions ? `${(Number(b.co2_emissions)/1000).toFixed(1)} kg CO₂` : ""}
+                  <br />
+                  <strong className="text-blue-600">
+                    {typeof b.price_eur === "number" ? `${b.price_eur.toFixed(0)} EUR` : "—"}
+                  </strong>
+                </div>
               </div>
-              <div className="text-xl font-semibold text-gray-800">
-                {booking.pickup_country} → {booking.delivery_country}
-              </div>
-              <div className="text-sm text-gray-600 mt-2">
-                {new Date(booking.created_at).toLocaleDateString()}<br />
-                {booking.ldm} LDM, {booking.weight} kg<br />
-                <strong className="text-blue-600">{booking.total_price} kr</strong>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
+
 
 
 
