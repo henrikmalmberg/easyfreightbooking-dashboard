@@ -2,30 +2,6 @@
 import React from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 
-/**
- * Förväntad location.state-struktur (exempel):
- * {
- *   search: {
- *     pickup_country: "SE",
- *     pickup_postal: "21617",
- *     pickup_city: "Limhamn",
- *     delivery_country: "IT",
- *     delivery_postal: "41040",
- *     delivery_city: "Province of Modena",
- *     goods: [{ type: "Colli", weight: "150", length: "120", width: "80", height: "60", quantity: 2 }],
- *     chargeableWeight: 420   // antal kg som priset baserades på
- *   },
- *   option: {
- *     mode: "conventional_rail",
- *     total_price_eur: 2714,
- *     earliest_pickup_date: "2025-08-12",
- *     transit_time_days: [4, 5],
- *     co2_emissions_grams: 361900,
- *     description: "Some text..."
- *   }
- * }
- */
-
 function SummaryHeader({ search, option }) {
   return (
     <section className="rounded-lg border bg-white px-6 py-5 shadow-sm">
@@ -373,27 +349,11 @@ export default function BookingForm() {
       <h1 className="text-2xl font-bold mb-4">📦 Booking details</h1>
 
       {/* Summary */}
-      <div className="bg-white border rounded-lg p-4 shadow-sm mb-6">
-        <div className="flex flex-wrap gap-2 items-center">
-          <SummaryBadge
-            label="Route"
-            value={`${search.pickup_country} (${search.pickup_postal}) → ${search.delivery_country} (${search.delivery_postal})`}
-          />
-          <SummaryBadge
-            label="Selected option"
-            value={option.mode.replace(/_/g, " ")}
-          />
-          <SummaryBadge label="Price" value={`${option.total_price_eur} EUR`} />
-          <SummaryBadge label="Earliest pickup" value={option.earliest_pickup_date} />
-          <SummaryBadge
-            label="Transit"
-            value={`${option.transit_time_days?.[0]}–${option.transit_time_days?.[1]} days`}
-          />
-          <SummaryBadge
-            label="CO₂"
-            value={`${(Number(option.co2_emissions_grams || 0) / 1000).toFixed(1)} kg`}
-          />
-        </div>
+      {/* Summary (business style) */}
+<div className="mb-6">
+  <SummaryHeader search={search} option={option} />
+</div>
+
 
         {/* Goods mini summary */}
         <div className="mt-3 text-sm text-gray-700">
