@@ -341,26 +341,14 @@ try {
     body: JSON.stringify(payload)
   });
 
-  // Läs kropp *även vid fel*:
-  let bodyText = await res.text();
-  let bodyJson = null;
-  try { bodyJson = JSON.parse(bodyText); } catch(_) {}
+const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
 
-  console.log("BOOK response", res.status, bodyJson || bodyText);
-
-  if (!res.ok) {
-    const msg = (bodyJson && (bodyJson.error || bodyJson.message)) || bodyText || `HTTP ${res.status}`;
-    alert(`Could not send booking: ${msg}`);
-    return;
+    setResult(data); // ⬅️ visa alternativen
+  } catch (err) {
+    console.error(err);
+    alert(`Could not fetch prices: ${err.message}`);
   }
-
-  alert("✅ Booking sent. You'll receive a confirmation email shortly.");
-  navigate("/dashboard");
-} catch (err) {
-  console.error(err);
-  alert(`Could not send booking. Network error: ${err.message}`);
-}
-
 };
 
 
