@@ -6,20 +6,19 @@ function SummaryHeader({ search, option }) {
   return (
     <section className="rounded-lg border bg-white px-6 py-5 shadow-sm">
       <div className="flex items-start justify-between gap-6">
-        {/* Vänster: titel + rutt */}
         <div>
           <h2 className="text-xl font-semibold text-gray-900">Booking details</h2>
           <p className="mt-1 text-sm text-gray-500">
-            {search.pickup_country} ({search.pickup_postal}{search.pickup_city ? ` ${search.pickup_city}` : ""})
-            {" "}→{" "}
-            {search.delivery_country} ({search.delivery_postal}{search.delivery_city ? ` ${search.delivery_city}` : ""})
+            {search.pickup_country} ({search.pickup_postal}
+            {search.pickup_city ? ` ${search.pickup_city}` : ""}) →{" "}
+            {search.delivery_country} ({search.delivery_postal}
+            {search.delivery_city ? ` ${search.delivery_city}` : ""})
           </p>
         </div>
-
-        {/* Höger: priset som primär signal */}
         <div className="text-right">
           <div className="text-2xl font-semibold text-gray-900">
-            {option.total_price_eur} <span className="text-base font-normal text-gray-500">EUR</span>
+            {option.total_price_eur}{" "}
+            <span className="text-base font-normal text-gray-500">EUR</span>
           </div>
           <div className="text-xs text-gray-500">excl. VAT</div>
         </div>
@@ -43,12 +42,20 @@ function SummaryHeader({ search, option }) {
       </div>
 
       <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-        <InfoItem label="Pieces" value={String(search.goods?.reduce((a,g)=>a+(Number(g.quantity)||0),0) || 1)} />
+        <InfoItem
+          label="Pieces"
+          value={String(
+            search.goods?.reduce((a, g) => a + (Number(g.quantity) || 0), 0) || 1
+          )}
+        />
         <InfoItem
           label="Total weight"
           value={`${Math.round(
-            search.goods?.reduce((a,g)=>a + (Number(g.weight)||0) * (Number(g.quantity)||1), 0
-          ) || 0)} kg`}
+            search.goods?.reduce(
+              (a, g) => a + (Number(g.weight) || 0) * (Number(g.quantity) || 1),
+              0
+            ) || 0
+          )} kg`}
         />
         <InfoItem
           label="Chargeable (priced)"
@@ -71,35 +78,22 @@ function InfoItem({ label, value, emphasize = false }) {
   );
 }
 
-
-function AddressSection({ title, side, value, onChange, lockedCountry, lockedPostal }) {
-  // side: "pickup" | "delivery"
+function AddressSection({ title, value, onChange, lockedCountry, lockedPostal }) {
   return (
     <div className="bg-white border rounded-lg p-4 shadow-sm">
       <h3 className="text-lg font-semibold mb-3">{title}</h3>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Country (locked) */}
         <div>
           <label className="block text-sm font-medium text-gray-700">Country</label>
-          <input
-            className="mt-1 w-full border rounded p-2 bg-gray-50 text-gray-700"
-            value={lockedCountry}
-            disabled
-          />
+          <input className="mt-1 w-full border rounded p-2 bg-gray-50 text-gray-700" value={lockedCountry} disabled />
         </div>
 
-        {/* Postal code (locked) */}
         <div>
           <label className="block text-sm font-medium text-gray-700">Postal code</label>
-          <input
-            className="mt-1 w-full border rounded p-2 bg-gray-50 text-gray-700"
-            value={lockedPostal}
-            disabled
-          />
+          <input className="mt-1 w-full border rounded p-2 bg-gray-50 text-gray-700" value={lockedPostal} disabled />
         </div>
 
-        {/* City (editable) */}
         <div>
           <label className="block text-sm font-medium text-gray-700">City</label>
           <input
@@ -110,7 +104,6 @@ function AddressSection({ title, side, value, onChange, lockedCountry, lockedPos
           />
         </div>
 
-        {/* Business name */}
         <div>
           <label className="block text-sm font-medium text-gray-700">Business name</label>
           <input
@@ -121,7 +114,6 @@ function AddressSection({ title, side, value, onChange, lockedCountry, lockedPos
           />
         </div>
 
-        {/* Address line 1 */}
         <div>
           <label className="block text-sm font-medium text-gray-700">Address</label>
           <input
@@ -132,7 +124,6 @@ function AddressSection({ title, side, value, onChange, lockedCountry, lockedPos
           />
         </div>
 
-        {/* Address line 2 */}
         <div>
           <label className="block text-sm font-medium text-gray-700">Address 2 (optional)</label>
           <input
@@ -143,7 +134,6 @@ function AddressSection({ title, side, value, onChange, lockedCountry, lockedPos
           />
         </div>
 
-        {/* Contact name */}
         <div>
           <label className="block text-sm font-medium text-gray-700">Contact name</label>
           <input
@@ -154,7 +144,6 @@ function AddressSection({ title, side, value, onChange, lockedCountry, lockedPos
           />
         </div>
 
-        {/* Phone */}
         <div>
           <label className="block text-sm font-medium text-gray-700">Phone</label>
           <input
@@ -165,7 +154,6 @@ function AddressSection({ title, side, value, onChange, lockedCountry, lockedPos
           />
         </div>
 
-        {/* Email */}
         <div>
           <label className="block text-sm font-medium text-gray-700">Email</label>
           <input
@@ -177,7 +165,6 @@ function AddressSection({ title, side, value, onChange, lockedCountry, lockedPos
           />
         </div>
 
-        {/* Opening hours */}
         <div>
           <label className="block text-sm font-medium text-gray-700">Opening hours</label>
           <input
@@ -188,7 +175,6 @@ function AddressSection({ title, side, value, onChange, lockedCountry, lockedPos
           />
         </div>
 
-        {/* Instructions */}
         <div className="md:col-span-2">
           <label className="block text-sm font-medium text-gray-700">Instructions to driver</label>
           <textarea
@@ -208,7 +194,6 @@ export default function BookingForm() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Fallbacks om man går direkt hit
   const search = location.state?.search ?? {
     pickup_country: "SE",
     pickup_postal: "21617",
@@ -229,7 +214,6 @@ export default function BookingForm() {
     description: "Road freight option",
   };
 
-  // Form state: pickup + delivery (city är redigerbar, country/postal låsta via UI)
   const [pickup, setPickup] = React.useState({
     city: search.pickup_city || "",
     business_name: "",
@@ -254,20 +238,10 @@ export default function BookingForm() {
     instructions: "",
   });
 
-  // Referenser & tillval
-  const [refs, setRefs] = React.useState({
-    reference1: "",
-    reference2: "",
-  });
+  const [refs, setRefs] = React.useState({ reference1: "", reference2: "" });
+  const [addons, setAddons] = React.useState({ tail_lift: false, pre_notice: false });
 
-  const [addons, setAddons] = React.useState({
-    tail_lift: false,
-    pre_notice: false,
-  });
-
-  // (Visning) summering av goods
   const chargeableWeight = Number(search.chargeableWeight ?? 0);
-
   const totalPieces = (search.goods ?? []).reduce((acc, g) => acc + (Number(g.quantity) || 0), 0);
   const totalWeight = (search.goods ?? []).reduce(
     (acc, g) => acc + (Number(g.weight) || 0) * (Number(g.quantity) || 1),
@@ -275,7 +249,6 @@ export default function BookingForm() {
   );
 
   function handleSubmit() {
-    // Vikt-regel: får inte överstiga sökt (prisad) fraktdragande vikt
     if (totalWeight > chargeableWeight) {
       alert(
         `Total weight (${Math.round(totalWeight)} kg) exceeds chargeable weight you searched for (${Math.round(
@@ -285,7 +258,6 @@ export default function BookingForm() {
       return;
     }
 
-    // Enkel fältvalidering
     const required = [
       pickup.business_name,
       pickup.address,
@@ -303,63 +275,43 @@ export default function BookingForm() {
       return;
     }
 
-    // Payload för backend (exempel)
     const payload = {
       selected_mode: option.mode,
       price_eur: option.total_price_eur,
       earliest_pickup: option.earliest_pickup_date,
       transit_time_days: option.transit_time_days,
       co2_emissions_grams: option.co2_emissions_grams,
-
-      pickup: {
-        country: search.pickup_country,
-        postal: search.pickup_postal,
-        ...pickup,
-      },
-      delivery: {
-        country: search.delivery_country,
-        postal: search.delivery_postal,
-        ...delivery,
-      },
-
+      pickup: { country: search.pickup_country, postal: search.pickup_postal, ...pickup },
+      delivery: { country: search.delivery_country, postal: search.delivery_postal, ...delivery },
       goods: search.goods,
       references: refs,
       addons,
     };
 
     console.log("Booking payload:", payload);
-
-    // TODO: POST till ditt API när endpoint finns (t.ex. /bookings)
-    // fetch("/api/bookings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) })
-
     alert("✅ Booking captured locally (no API yet). Check console for payload.");
     navigate("/dashboard");
   }
 
   return (
     <div className="max-w-5xl mx-auto">
-      {/* Breadcrumb / back */}
       <div className="mb-4">
         <Link to="/dashboard" className="text-sm text-blue-600 hover:underline">
           ← Back to dashboard
         </Link>
       </div>
 
-      {/* Header */}
       <h1 className="text-2xl font-bold mb-4">📦 Booking details</h1>
 
-      {/* Summary */}
       {/* Summary (business style) */}
-<div className="mb-6">
-  <SummaryHeader search={search} option={option} />
-</div>
-
+      <div className="mb-6">
+        <SummaryHeader search={search} option={option} />
+      </div>
 
       {/* Address sections */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <AddressSection
           title="Pickup address"
-          side="pickup"
           value={pickup}
           onChange={setPickup}
           lockedCountry={search.pickup_country}
@@ -367,7 +319,6 @@ export default function BookingForm() {
         />
         <AddressSection
           title="Delivery address"
-          side="delivery"
           value={delivery}
           onChange={setDelivery}
           lockedCountry={search.delivery_country}
@@ -378,9 +329,7 @@ export default function BookingForm() {
       {/* References & add-ons */}
       <div className="bg-white border rounded-lg p-4 shadow-sm mb-6">
         <h3 className="text-lg font-semibold mb-3">References & add-ons</h3>
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* References */}
           <div>
             <label className="block text-sm font-medium text-gray-700">Reference 1</label>
             <input
@@ -400,7 +349,6 @@ export default function BookingForm() {
             />
           </div>
 
-          {/* Add-ons */}
           <div className="md:col-span-2 flex items-center gap-6 mt-2">
             <label className="inline-flex items-center gap-2">
               <input
@@ -455,10 +403,7 @@ export default function BookingForm() {
 
       {/* Submit */}
       <div className="flex items-center gap-3">
-        <button
-          onClick={() => navigate(-1)}
-          className="px-4 py-2 rounded border bg-white hover:bg-gray-50"
-        >
+        <button onClick={() => navigate(-1)} className="px-4 py-2 rounded border bg-white hover:bg-gray-50">
           ← Back
         </button>
         <button
