@@ -242,7 +242,7 @@ export default function BookingForm() {
     asap: true,
     date: "" // YYYY-MM-DD
   });
-
+  const [deliverySchedule, setDeliverySchedule] = React.useState({ asap: true, date: "" }); 
   const [approvals, setApprovals] = React.useState({
   terms: false,
   gdpr: false
@@ -322,6 +322,11 @@ if (!pickupSchedule.asap && !pickupSchedule.date) {
   alert('Please select a "Requested pickup date" or check "As soon as possible".');
   return;
 }
+if (!deliverySchedule.asap && !deliverySchedule.date) {
+  alert('Please select a "Requested delivery date" or check "As soon as possible".');
+  return;
+}
+
 
     if (totalWeight > chargeableWeight) {
       alert(
@@ -361,10 +366,14 @@ const payload = {
   references: refs,
   addons,
   update_contact: updateContact,
+
   // NEW:
   asap_pickup: pickupSchedule.asap,
   requested_pickup_date: pickupSchedule.asap ? null : pickupSchedule.date,
+  asap_delivery: deliverySchedule.asap,
+  requested_delivery_date: deliverySchedule.asap ? null : deliverySchedule.date,
 };
+
 
 
 try {
@@ -558,4 +567,5 @@ try {
 
     </div>
   );
+}
 }
