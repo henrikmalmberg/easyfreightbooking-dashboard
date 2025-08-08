@@ -334,20 +334,33 @@ setResult(null);
     chargeable_weight: Math.round(chargeableWeight),
   };
 
-  try {
-    const response = await fetch("https://easyfreightbooking-api.onrender.com/calculate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+try {
+  const res = await fetch("https://easyfreightbooking-api.onrender.com/book", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
 
-    const result = await response.json();
-    console.log("API Response:", result);
-    setResult(result);
-  } catch (error) {
-    console.error("API error:", error);
-    alert("Server connections error.");
+  // Läs kropp *även vid fel*:
+  let bodyText = await res.text();
+  let bodyJson = null;
+  try { bodyJson = JSON.parse(bodyText); } catch(_) {}
+
+  console.log("BOOK response", res.status, bodyJson || bodyText);
+
+  if (!res.ok) {
+    const msg = (bodyJson && (bodyJson.error || bodyJson.message)) || bodyText || `HTTP ${res.status}`;
+    alert(`Could not send booking: ${msg}`);
+    return;
   }
+
+  alert("✅ Booking sent. You'll receive a confirmation email shortly.");
+  navigate("/dashboard");
+} catch (err) {
+  console.error(err);
+  alert(`Could not send booking. Network error: ${err.message}`);
+}
+
 };
 
 
