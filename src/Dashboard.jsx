@@ -1,6 +1,7 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from "react-router-dom";
 import BookingForm from "./BookingForm";
+import { useState } from "react";
 
 const COUNTRIES = [
   { code: "SE", name: "Sweden" }, { code: "DK", name: "Denmark" }, { code: "NO", name: "Norway" },
@@ -131,7 +132,7 @@ function Dashboard() {
     <div>
       
 		
-import { useState } from "react";
+
 
  {Array.isArray(bookings) && bookings.length > 0 && (
         <>
