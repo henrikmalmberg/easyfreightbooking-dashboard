@@ -2,29 +2,43 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from "react-router-dom";
 import BookingForm from "./BookingForm";
 
+/* =====================  API helpers  ===================== */
 const API = "https://easyfreightbooking-api.onrender.com";
 
-// Hämta token (justera om du sparar den på annat sätt)
+// Hämta token från localStorage (stöd för flera nycklar + global fallback)
 function getToken() {
-  return localStorage.getItem("EFB_TOKEN") || window.__EFB_TOKEN__ || "";
+  return (
+    localStorage.getItem("jwt") ||
+    localStorage.getItem("EFB_TOKEN") ||
+    window.__EFB_TOKEN__ ||
+    ""
+  );
 }
+
+// Endast Authorization för GET; POST/PUT använder en separat helper
+const authHeaders = () => ({
+  Authorization: "Bearer " + getToken(),
+});
+
 async function authedGet(path) {
-  const res = await fetch(`${API}${path}`, {
-    headers: { Authorization: `Bearer ${getToken()}` },
-  });
-  const data = await res.json();
+  const res = await fetch(`${API}${path}`, { headers: authHeaders() });
+  const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
   return data;
 }
 
-// Lägg högst upp
-const API = "https://easyfreightbooking-api.onrender.com";
-const authHeaders = () => ({
-  "Content-Type": "application/json",
-  "Authorization": "Bearer " + (localStorage.getItem("jwt") || "")
-});
+async function authedPost(path, body) {
+  const res = await fetch(`${API}${path}`, {
+    method: "POST",
+    headers: { ...authHeaders(), "Content-Type": "application/json" },
+    body: JSON.stringify(body || {}),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+  return data;
+}
 
-
+/* =====================  Data  ===================== */
 const COUNTRIES = [
   { code: "SE", name: "Sweden" }, { code: "DK", name: "Denmark" }, { code: "NO", name: "Norway" },
   { code: "FI", name: "Finland" }, { code: "DE", name: "Germany" }, { code: "FR", name: "France" },
@@ -39,6 +53,7 @@ const COUNTRIES = [
   { code: "UA", name: "Ukraine" }
 ];
 
+/* =====================  Geocoding  ===================== */
 async function getCoordinates(postal, country) {
   const apiKey = "AIzaSyBwOgpWgeY6e4SPNiB1nc_jKKqlN_Yn6YI";
   const response = await fetch(
@@ -82,6 +97,7 @@ function useCityLookup(postal, country) {
   return data;
 }
 
+/* =====================  App / Routing  ===================== */
 export default function App() {
   return (
     <Router>
@@ -108,6 +124,7 @@ function Welcome() {
   );
 }
 
+/* =====================  Layout & Sidebar  ===================== */
 export function Layout({ children }) {
   const [showSidebar, setShowSidebar] = React.useState(false);
   return (
@@ -126,7 +143,73 @@ export function Layout({ children }) {
   );
 }
 
-/* -------------------- Bookings list (fäll ut) -------------------- */
+function Sidebar({ visible, onClose }) {
+  const [me, setMe] = React.useState(null);
+  const [err, setErr] = React.useState(null);
+
+  React.useEffect(() => {
+    let alive = true;
+    authedGet("/me")
+      .then((d) => alive && setMe(d))
+      .catch((e) => alive && setErr(e.message));
+    return () => { alive = false; };
+  }, []);
+
+  const logout = () => {
+    localStorage.removeItem("jwt");
+    localStorage.removeItem("EFB_TOKEN");
+    window.location.href = "/"; // hård omladdning så att state nollas
+  };
+
+  return (
+    <aside className={`fixed md:relative z-50 md:z-auto transform top-0 left-0 h-full w-64 bg-white border-r p-6 shadow-md transition-transform duration-300 ${visible ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}>
+      <Link to="/" onClick={onClose} className="block mb-6">
+        <img src="/logo.png" alt="EasyFreightBooking Logo" className="h-18 w-auto" />
+      </Link>
+
+      <nav className="space-y-3">
+        <Link to="/dashboard" className="block text-blue-600 font-medium hover:text-blue-800" onClick={onClose}>
+          Dashboard
+        </Link>
+        <Link to="/new-booking" className="block text-gray-700 hover:text-blue-600" onClick={onClose}>
+          New booking
+        </Link>
+        <Link to="/view-bookings" className="block text-gray-700 hover:text-blue-600" onClick={onClose}>
+          View bookings
+        </Link>
+        <Link to="/account" className="block text-gray-700 hover:text-blue-600" onClick={onClose}>
+          My account
+        </Link>
+
+        <hr className="my-4" />
+        <button onClick={logout} className="flex items-center text-sm text-gray-500 hover:text-red-500">
+          Log out
+        </button>
+      </nav>
+
+      {/* Tre rader info från /me */}
+      <div className="mt-6 pt-4 border-t text-xs text-gray-600 space-y-1">
+        {me ? (
+          <>
+            <div className="truncate">{me.organization.company_name}</div>
+            <div className="truncate">{me.organization.vat_number}</div>
+            <div className="truncate">{me.user.name}</div>
+          </>
+        ) : err ? (
+          <div className="text-red-500">Auth error</div>
+        ) : (
+          <>
+            <div className="animate-pulse">—</div>
+            <div className="animate-pulse">—</div>
+            <div className="animate-pulse">—</div>
+          </>
+        )}
+      </div>
+    </aside>
+  );
+}
+
+/* =====================  Bookings list (expand/collapse)  ===================== */
 function BookingsList({ bookings }) {
   const [openId, setOpenId] = React.useState(null);
   if (!Array.isArray(bookings) || bookings.length === 0) {
@@ -180,7 +263,7 @@ function BookingsList({ bookings }) {
   );
 }
 
-/* -------------------- View bookings (hämtar via JWT) -------------------- */
+/* =====================  View bookings (JWT)  ===================== */
 function ViewBookings() {
   const [bookings, setBookings] = React.useState(null);
   const [err, setErr] = React.useState(null);
@@ -202,7 +285,7 @@ function ViewBookings() {
   );
 }
 
-/* -------------------- My account + Invite colleague -------------------- */
+/* =====================  My account + Invite colleague  ===================== */
 function MyAccount() {
   const [me, setMe] = React.useState(null);
   const [err, setErr] = React.useState(null);
@@ -217,13 +300,7 @@ function MyAccount() {
     e.preventDefault();
     setInviteMsg("");
     try {
-      const res = await fetch(`${API}/invite-user`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
-        body: JSON.stringify(invite),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      await authedPost("/invite-user", invite);
       setInviteMsg("✅ Invitation sent!");
       setInvite({ name: "", email: "", password: "", role: "user" });
     } catch (e) {
@@ -268,7 +345,7 @@ function MyAccount() {
   );
 }
 
-/* -------------------- New booking (oförändrad i sak) -------------------- */
+/* =====================  New booking  ===================== */
 function ResultCard({ transport, selectedOption, onSelect }) {
   const [showInfo, setShowInfo] = React.useState(false);
   const icons = {
@@ -534,66 +611,5 @@ function NewBooking() {
         Proceed with selected option
       </button>
     </div>
-  );
-}
-
-/* -------------------- Sidebar med /me-info -------------------- */
-function Sidebar({ visible, onClose }) {
-  const [me, setMe] = React.useState(null);
-  const [err, setErr] = React.useState(null);
-
-  React.useEffect(() => {
-    let alive = true;
-    authedGet("/me")
-      .then((d) => alive && setMe(d))
-      .catch((e) => alive && setErr(e.message));
-    return () => { alive = false; };
-  }, []);
-
-  return (
-    <aside className={`fixed md:relative z-50 md:z-auto transform top-0 left-0 h-full w-64 bg-white border-r p-6 shadow-md transition-transform duration-300 ${visible ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}>
-      <Link to="/" onClick={onClose} className="block mb-6">
-        <img src="/logo.png" alt="EasyFreightBooking Logo" className="h-18 w-auto" />
-      </Link>
-
-      <nav className="space-y-3">
-        <Link to="/dashboard" className="block text-blue-600 font-medium hover:text-blue-800" onClick={onClose}>
-          Dashboard
-        </Link>
-        <Link to="/new-booking" className="block text-gray-700 hover:text-blue-600" onClick={onClose}>
-          New booking
-        </Link>
-        <Link to="/view-bookings" className="block text-gray-700 hover:text-blue-600" onClick={onClose}>
-          View bookings
-        </Link>
-        <Link to="/account" className="block text-gray-700 hover:text-blue-600" onClick={onClose}>
-          My account
-        </Link>
-
-        <hr className="my-4" />
-        <button className="flex items-center text-sm text-gray-500 hover:text-red-500">
-          Log out
-        </button>
-      </nav>
-
-      {/* Tre rader info från /me */}
-      <div className="mt-6 pt-4 border-t text-xs text-gray-600 space-y-1">
-        {me ? (
-          <>
-            <div className="truncate">{me.organization.company_name}</div>
-            <div className="truncate">{me.organization.vat_number}</div>
-            <div className="truncate">{me.user.name}</div>
-          </>
-        ) : err ? (
-          <div className="text-red-500">Auth error</div>
-        ) : (
-          <>
-            <div className="animate-pulse">—</div>
-            <div className="animate-pulse">—</div>
-            <div className="animate-pulse">—</div>
-          </>
-        )}
-      </div>
-    </aside>
   );
 }
