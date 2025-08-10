@@ -114,8 +114,14 @@ export default function App() {
           <Route path="/confirm" element={<ProtectedRoute><BookingForm /></ProtectedRoute>} />
           <Route path="/view-bookings" element={<ProtectedRoute><ViewBookings /></ProtectedRoute>} />
           <Route path="/account" element={<ProtectedRoute><MyAccount /></ProtectedRoute>} />
-          <Route path="/admin/bookings" element={<AdminAllBookings />} />
-
+          <Route
+            path="/admin/bookings"
+            element={
+              <ProtectedRoute>
+                <AdminAllBookings />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to={getToken() ? "/dashboard" : "/login"} replace />} />
@@ -159,12 +165,6 @@ function Sidebar({ visible, onClose }) {
     }
     return () => { alive = false; };
   }, [authed]);
-  
-  {me?.user?.role === "superadmin" && (
-  <Link to="/admin/bookings" className="block text-gray-700 hover:text-blue-600" onClick={onClose}>
-    Admin: All bookings
-  </Link>
-  )}
 
   const handleLogout = () => {
     clearToken();
@@ -192,6 +192,13 @@ function Sidebar({ visible, onClose }) {
             <Link to="/account" className="block text-gray-700 hover:text-blue-600" onClick={onClose}>
               My account
             </Link>
+
+            {/* ✅ Endast för superadmin */}
+            {me?.user?.role === "superadmin" && (
+              <Link to="/admin/bookings" className="block text-gray-700 hover:text-blue-600" onClick={onClose}>
+                Admin: All bookings
+              </Link>
+            )}
 
             <hr className="my-4" />
             <button onClick={handleLogout} className="flex items-center text-sm text-gray-500 hover:text-red-500">
@@ -420,17 +427,24 @@ function AdminAllBookings() {
   const [err, setErr] = React.useState(null);
 
   React.useEffect(() => {
-    // superadmin får allt; du kan lägga query-parametrar om du vill filtrera
-    fetch(`${API}/bookings`, { headers: { Authorization: `Bearer ${localStorage.getItem("jwt") || ""}` } })
-      .then(r => r.json().then(j => ({ ok: r.ok, j })))
-      .then(({ ok, j }) => ok ? setBookings(j) : setErr(j.error || "HTTP error"))
-      .catch(e => setErr(e.message));
+    // 1) Verifiera roll via /me
+    authedGet("/me")
+      .then((m) => {
+        if (m?.user?.role !== "superadmin") throw new Error("Forbidden");
+        // 2) Hämta alla bokningar (servern släpper igenom superadmin)
+        return fetch(`${API}/bookings`, { headers: { Authorization: `Bearer ${getToken()}` } });
+      })
+      .then((r) => r.json().then((j) => ({ ok: r.ok, j })))
+      .then(({ ok, j }) => (ok ? setBookings(j) : setErr(j.error || "HTTP error")))
+      .catch((e) => setErr(e.message));
   }, []);
+
+  if (err === "Forbidden") return <div className="text-red-600">403 – Admin only</div>;
 
   return (
     <div>
       <h1 className="text-3xl font-bold mb-4">🛡️ Admin: All bookings</h1>
-      {err && <div className="text-red-600 mb-2">{String(err)}</div>}
+      {err && err !== "Forbidden" && <div className="text-red-600 mb-2">{String(err)}</div>}
       {bookings === null ? <div>Loading…</div> : <BookingsList bookings={bookings} />}
     </div>
   );
