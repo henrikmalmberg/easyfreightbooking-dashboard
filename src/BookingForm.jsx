@@ -2,6 +2,10 @@
 import React from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 
+// ---- Auth helpers ----
+const API = "https://easyfreightbooking-api.onrender.com";
+const getToken = () => localStorage.getItem("jwt") || "";
+
 let userId = 1;
 try { userId = window.loggedInUserId || 1; } catch {}
 
@@ -27,48 +31,47 @@ function SummaryHeader({ search, option }) {
         </div>
       </div>
 
-{/* Översta raden */}
-<div className="mt-4 border-t pt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
-  <InfoItem label="Selected product" value={option.mode.replace("_", " ")} />
-  <InfoItem label="Earliest pickup" value={option.earliest_pickup_date} />
-  <InfoItem
-    label="Transit"
-    value={
-      Array.isArray(option.transit_time_days)
-        ? `${option.transit_time_days[0]}–${option.transit_time_days[1]} days`
-        : option.transit_time_days
-    }
-  />
-  <InfoItem
-    label="CO₂ (est.)"
-    value={`${(option.co2_emissions_grams / 1000).toFixed(1)} kg`}
-  />
-</div>
+      {/* Översta raden */}
+      <div className="mt-4 border-t pt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <InfoItem label="Selected product" value={option.mode.replace("_", " ")} />
+        <InfoItem label="Earliest pickup" value={option.earliest_pickup_date} />
+        <InfoItem
+          label="Transit"
+          value={
+            Array.isArray(option.transit_time_days)
+              ? `${option.transit_time_days[0]}–${option.transit_time_days[1]} days`
+              : option.transit_time_days
+          }
+        />
+        <InfoItem
+          label="CO₂ (est.)"
+          value={`${(option.co2_emissions_grams / 1000).toFixed(1)} kg`}
+        />
+      </div>
 
-{/* Andra raden */}
-<div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
-  <InfoItem
-    label="Quantity"
-    value={String(
-      search.goods?.reduce((a, g) => a + (Number(g.quantity) || 0), 0) || 1
-    )}
-  />
-  <InfoItem
-    label="Total weight"
-    value={`${Math.round(
-      search.goods?.reduce(
-        (a, g) => a + (Number(g.weight) || 0) * (Number(g.quantity) || 1),
-        0
-      ) || 0
-    )} kg`}
-  />
-  <InfoItem
-    label="Chargeable weight" // <-- ändrad rubrik
-    value={`${Math.round(search.chargeableWeight)} kg`}
-  />
-  <div /> {/* Tom för att fylla ut sista kolumnen */}
-</div>
-
+      {/* Andra raden */}
+      <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <InfoItem
+          label="Quantity"
+          value={String(
+            search.goods?.reduce((a, g) => a + (Number(g.quantity) || 0), 0) || 1
+          )}
+        />
+        <InfoItem
+          label="Total weight"
+          value={`${Math.round(
+            search.goods?.reduce(
+              (a, g) => a + (Number(g.weight) || 0) * (Number(g.quantity) || 1),
+              0
+            ) || 0
+          )} kg`}
+        />
+        <InfoItem
+          label="Chargeable weight"
+          value={`${Math.round(search.chargeableWeight)} kg`}
+        />
+        <div /> {/* filler */}
+      </div>
     </section>
   );
 }
@@ -231,35 +234,23 @@ function AddressSection({
   );
 }
 
-
-
-
-
-
-
-      
 export default function BookingForm() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [pickupSchedule, setPickupSchedule] = React.useState({
-    asap: true,
-    date: "" // YYYY-MM-DD
+
+  const [pickupSchedule, setPickupSchedule] = React.useState({ asap: true, date: "" });
+  const [deliverySchedule, setDeliverySchedule] = React.useState({ asap: true, date: "" });
+
+  const [approvals, setApprovals] = React.useState({ terms: false, gdpr: false });
+
+  const loggedInUser = location.state?.user ?? { name: "", phone: "", email: "" };
+  const booker = { name: loggedInUser.name, email: loggedInUser.email, phone: loggedInUser.phone };
+
+  const [updateContact, setUpdateContact] = React.useState({
+    name: loggedInUser.name,
+    phone: loggedInUser.phone,
+    email: loggedInUser.email
   });
-  const [deliverySchedule, setDeliverySchedule] = React.useState({ asap: true, date: "" }); 
-  const [approvals, setApprovals] = React.useState({
-  terms: false,
-  gdpr: false
-});
-
-
-const loggedInUser = location.state?.user ?? { name: "", phone: "", email: "" };
-const booker = { name: loggedInUser.name, email: loggedInUser.email, phone: loggedInUser.phone };
-const [updateContact, setUpdateContact] = React.useState({
-  name: loggedInUser.name,
-  phone: loggedInUser.phone,
-  email: loggedInUser.email
-});
-
 
   const search = location.state?.search ?? {
     pickup_country: "SE",
@@ -309,28 +300,24 @@ const [updateContact, setUpdateContact] = React.useState({
   const [addons, setAddons] = React.useState({ tail_lift: false, pre_notice: false });
 
   const chargeableWeight = Number(search.chargeableWeight ?? 0);
-  const totalPieces = (search.goods ?? []).reduce((acc, g) => acc + (Number(g.quantity) || 0), 0);
   const totalWeight = (search.goods ?? []).reduce(
     (acc, g) => acc + (Number(g.weight) || 0) * (Number(g.quantity) || 1),
     0
   );
 
   async function handleSubmit() {
-
     if (!approvals.terms || !approvals.gdpr) {
-  alert("Please approve Terms and Conditions and GDPR processing before booking.");
-  return;
-}
-if (!pickupSchedule.asap && !pickupSchedule.date) {
-  alert('Please select a "Requested pickup date" or check "As soon as possible".');
-  return;
-}
-if (!deliverySchedule.asap && !deliverySchedule.date) {
-  alert('Please select a "Requested delivery date" or check "As soon as possible".');
-  return;
-}
-
-
+      alert("Please approve Terms and Conditions and GDPR processing before booking.");
+      return;
+    }
+    if (!pickupSchedule.asap && !pickupSchedule.date) {
+      alert('Please select a "Requested pickup date" or check "As soon as possible".');
+      return;
+    }
+    if (!deliverySchedule.asap && !deliverySchedule.date) {
+      alert('Please select a "Requested delivery date" or check "As soon as possible".');
+      return;
+    }
     if (totalWeight > chargeableWeight) {
       alert(
         `Total weight (${Math.round(totalWeight)} kg) exceeds chargeable weight you searched for (${Math.round(
@@ -340,65 +327,77 @@ if (!deliverySchedule.asap && !deliverySchedule.date) {
       return;
     }
 
+    // very light required fields check
     const required = [
-      pickup.business_name,
-      pickup.address,
-      pickup.city,
-      delivery.business_name,
-      delivery.address,
-      delivery.city,
-      pickup.phone,
-      delivery.phone,
-      pickup.email,
-      delivery.email,
+      pickup.business_name, pickup.address, pickup.city,
+      delivery.business_name, delivery.address, delivery.city,
+      pickup.phone, delivery.phone, pickup.email, delivery.email,
     ];
     if (required.some((v) => !String(v).trim())) {
       alert("Please fill in required address and contact fields for pickup and delivery.");
       return;
     }
 
-const payload = {
-  selected_mode: option.mode,
-  price_eur: option.total_price_eur,
-  earliest_pickup: option.earliest_pickup_date,
-  transit_time_days: option.transit_time_days,
-  co2_emissions_grams: option.co2_emissions_grams,
-  pickup: { country: search.pickup_country, postal: search.pickup_postal, ...pickup },
-  delivery: { country: search.delivery_country, postal: search.delivery_postal, ...delivery },
-  goods: search.goods,
-  references: refs,
-  addons,
-  update_contact: updateContact,
+    const payload = {
+      selected_mode: option.mode,
+      price_eur: option.total_price_eur,
+      earliest_pickup: option.earliest_pickup_date,
+      transit_time_days: option.transit_time_days,
+      co2_emissions_grams: option.co2_emissions_grams,
 
-  user_id: String(userId),     // NEW ← viktigt för att koppla till rätt användare
-  asap_pickup: pickupSchedule.asap,
-  requested_pickup_date: pickupSchedule.asap ? null : pickupSchedule.date,
-  asap_delivery: deliverySchedule.asap,
-  requested_delivery_date: deliverySchedule.asap ? null : deliverySchedule.date,
+      pickup: { country: search.pickup_country, postal: search.pickup_postal, ...pickup },
+      delivery: { country: search.delivery_country, postal: search.delivery_postal, ...delivery },
 
-  // NEW:
-  asap_pickup: pickupSchedule.asap,
-  requested_pickup_date: pickupSchedule.asap ? null : pickupSchedule.date,
-  asap_delivery: deliverySchedule.asap,
-  requested_delivery_date: deliverySchedule.asap ? null : deliverySchedule.date,
-};
+      goods: search.goods,
+      references: refs,
+      addons,
+      booker,
+      update_contact: updateContact,
 
+      // You can omit user_id; backend falls back to JWT, but keeping doesn't hurt
+      user_id: String(userId),
 
+      asap_pickup: pickupSchedule.asap,
+      requested_pickup_date: pickupSchedule.asap ? null : pickupSchedule.date,
+      asap_delivery: deliverySchedule.asap,
+      requested_delivery_date: deliverySchedule.asap ? null : deliverySchedule.date,
+    };
 
-try {
-    const res = await fetch("https://easyfreightbooking-api.onrender.com/book", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    alert("✅ Booking sent. You'll receive a confirmation email shortly.");
-    navigate("/dashboard");
-  } catch (err) {
-    console.error(err);
-    alert("Could not send booking. Please try again.");
+    // ---- SEND WITH JWT ----
+    const token = getToken();
+    if (!token) {
+      alert("You are not logged in. Please log in again.");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API}/book`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const text = await res.text(); // helpful even when it's JSON
+      if (!res.ok) {
+        console.error("BOOK failed:", text);
+        try {
+          const j = JSON.parse(text);
+          throw new Error(j.error || text);
+        } catch {
+          throw new Error(text);
+        }
+      }
+
+      alert("✅ Booking sent. You'll receive a confirmation email shortly.");
+      navigate("/dashboard");
+    } catch (err) {
+      console.error(err);
+      alert(`Could not send booking. ${err.message || "Please try again."}`);
+    }
   }
-}
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -410,35 +409,34 @@ try {
 
       <h1 className="text-2xl font-bold mb-4">📦 Finalize booking</h1>
 
-      {/* Summary (business style) */}
+      {/* Summary */}
       <div className="mb-6">
         <SummaryHeader search={search} option={option} />
       </div>
 
       {/* Address sections */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-<AddressSection
-  title="Pickup address"
-  value={pickup}
-  onChange={setPickup}
-  lockedCountry={search.pickup_country}
-  lockedPostal={search.pickup_postal}
-  schedule={pickupSchedule}
-  onScheduleChange={setPickupSchedule}
-  scheduleLabel="Requested pickup date"
-/>
+        <AddressSection
+          title="Pickup address"
+          value={pickup}
+          onChange={setPickup}
+          lockedCountry={search.pickup_country}
+          lockedPostal={search.pickup_postal}
+          schedule={pickupSchedule}
+          onScheduleChange={setPickupSchedule}
+          scheduleLabel="Requested pickup date"
+        />
 
-<AddressSection
-  title="Delivery address"
-  value={delivery}
-  onChange={setDelivery}
-  lockedCountry={search.delivery_country}
-  lockedPostal={search.delivery_postal}
-  schedule={deliverySchedule}
-  onScheduleChange={setDeliverySchedule}
-  scheduleLabel="Requested delivery date"
-/>
-
+        <AddressSection
+          title="Delivery address"
+          value={delivery}
+          onChange={setDelivery}
+          lockedCountry={search.delivery_country}
+          lockedPostal={search.delivery_postal}
+          schedule={deliverySchedule}
+          onScheduleChange={setDeliverySchedule}
+          scheduleLabel="Requested delivery date"
+        />
       </div>
 
       {/* References & add-ons */}
@@ -464,117 +462,113 @@ try {
             />
           </div>
 
-<div className="md:col-span-2 mt-4">
-  <h4 className="text-sm font-medium text-gray-700">Add-ons</h4>
-  <p className="text-xs text-gray-500 mb-2">Additional costs may apply.</p>
-  
-  <div className="flex flex-wrap items-center gap-6">
-    <label className="inline-flex items-center gap-2">
-      <input
-        type="checkbox"
-        checked={addons.tail_lift}
-        onChange={(e) => setAddons({ ...addons, tail_lift: e.target.checked })}
-      />
-      <span>Tail-lift</span>
-    </label>
-    <label className="inline-flex items-center gap-2">
-      <input
-        type="checkbox"
-        checked={addons.pre_notice}
-        onChange={(e) => setAddons({ ...addons, pre_notice: e.target.checked })}
-      />
-      <span>Pre-notice</span>
-    </label>
-  </div>
-</div>
+          <div className="md:col-span-2 mt-4">
+            <h4 className="text-sm font-medium text-gray-700">Add-ons</h4>
+            <p className="text-xs text-gray-500 mb-2">Additional costs may apply.</p>
 
+            <div className="flex flex-wrap items-center gap-6">
+              <label className="inline-flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={addons.tail_lift}
+                  onChange={(e) => setAddons({ ...addons, tail_lift: e.target.checked })}
+                />
+                <span>Tail-lift</span>
+              </label>
+              <label className="inline-flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={addons.pre_notice}
+                  onChange={(e) => setAddons({ ...addons, pre_notice: e.target.checked })}
+                />
+                <span>Pre-notice</span>
+              </label>
+            </div>
+          </div>
         </div>
       </div>
 
-{/* Contact for transport updates */}
-<div className="bg-white border rounded-lg p-4 shadow-sm mb-6">
-  <h3 className="text-lg font-semibold mb-3">Contact for transport updates</h3>
-  <p className="text-sm text-gray-500 mb-4">
-    Specify who should receive notifications about this shipment. This can be you or someone else.
-  </p>
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-    <div>
-      <label className="block text-sm font-medium text-gray-700">Name</label>
-      <input
-        className="mt-1 w-full border rounded p-2"
-        value={updateContact.name}
-        onChange={(e) => setUpdateContact({ ...updateContact, name: e.target.value })}
-        placeholder="Full name"
-      />
-    </div>
-    <div>
-      <label className="block text-sm font-medium text-gray-700">Phone</label>
-      <input
-        className="mt-1 w-full border rounded p-2"
-        value={updateContact.phone}
-        onChange={(e) => setUpdateContact({ ...updateContact, phone: e.target.value })}
-        placeholder="+46 ..."
-      />
-    </div>
-    <div>
-      <label className="block text-sm font-medium text-gray-700">Email</label>
-      <input
-        type="email"
-        className="mt-1 w-full border rounded p-2"
-        value={updateContact.email}
-        onChange={(e) => setUpdateContact({ ...updateContact, email: e.target.value })}
-        placeholder="email@example.com"
-      />
-    </div>
-  </div>
-</div>
+      {/* Contact for transport updates */}
+      <div className="bg-white border rounded-lg p-4 shadow-sm mb-6">
+        <h3 className="text-lg font-semibold mb-3">Contact for transport updates</h3>
+        <p className="text-sm text-gray-500 mb-4">
+          Specify who should receive notifications about this shipment. This can be you or someone else.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Name</label>
+            <input
+              className="mt-1 w-full border rounded p-2"
+              value={updateContact.name}
+              onChange={(e) => setUpdateContact({ ...updateContact, name: e.target.value })}
+              placeholder="Full name"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Phone</label>
+            <input
+              className="mt-1 w-full border rounded p-2"
+              value={updateContact.phone}
+              onChange={(e) => setUpdateContact({ ...updateContact, phone: e.target.value })}
+              placeholder="+46 ..."
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Email</label>
+            <input
+              type="email"
+              className="mt-1 w-full border rounded p-2"
+              value={updateContact.email}
+              onChange={(e) => setUpdateContact({ ...updateContact, email: e.target.value })}
+              placeholder="email@example.com"
+            />
+          </div>
+        </div>
+      </div>
 
+      {/* Submit */}
+      <div className="flex flex-wrap items-center gap-4">
+        <button
+          onClick={() => navigate(-1)}
+          className="px-4 py-2 rounded border bg-white hover:bg-gray-50"
+        >
+          ← Back
+        </button>
 
-{/* Submit */}
-<div className="flex flex-wrap items-center gap-4">
-  <button
-    onClick={() => navigate(-1)}
-    className="px-4 py-2 rounded border bg-white hover:bg-gray-50"
-  >
-    ← Back
-  </button>
+        <button
+          onClick={handleSubmit}
+          disabled={!approvals.terms || !approvals.gdpr}
+          className={`px-5 py-2 rounded text-white font-medium shadow ${
+            !approvals.terms || !approvals.gdpr
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-green-600 hover:bg-green-700"
+          }`}
+        >
+          ✅ Confirm booking
+        </button>
 
-  <button
-    onClick={handleSubmit}
-    disabled={!approvals.terms || !approvals.gdpr}
-    className={`px-5 py-2 rounded text-white font-medium shadow ${
-      !approvals.terms || !approvals.gdpr
-        ? "bg-gray-400 cursor-not-allowed"
-        : "bg-green-600 hover:bg-green-700"
-    }`}
-  >
-    ✅ Confirm booking
-  </button>
+        <label className="inline-flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={approvals.terms}
+            onChange={(e) => setApprovals({ ...approvals, terms: e.target.checked })}
+          />
+          <span>
+            I approve <a href="/terms" target="_blank" className="text-blue-600 underline">Terms and Conditions</a>
+          </span>
+        </label>
 
-  <label className="inline-flex items-center gap-2">
-    <input
-      type="checkbox"
-      checked={approvals.terms}
-      onChange={(e) => setApprovals({ ...approvals, terms: e.target.checked })}
-    />
-    <span>
-      I approve <a href="/terms" target="_blank" className="text-blue-600 underline">Terms and Conditions</a>
-    </span>
-  </label>
-
-  <label className="inline-flex items-center gap-2">
-    <input
-      type="checkbox"
-      checked={approvals.gdpr}
-      onChange={(e) => setApprovals({ ...approvals, gdpr: e.target.checked })}
-    />
-    <span>
-      I approve EFB <a href="/gdpr" target="_blank" className="text-blue-600 underline">general GDPR terms</a>
-    </span>
-  </label>
-</div>
-
+        <label className="inline-flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={approvals.gdpr}
+            onChange={(e) => setApprovals({ ...approvals, gdpr: e.target.checked })}
+          />
+          <span>
+            I approve EFB <a href="/gdpr" target="_blank" className="text-blue-600 underline">general GDPR terms</a>
+          </span>
+        </label>
+      </div>
     </div>
   );
 }
-
