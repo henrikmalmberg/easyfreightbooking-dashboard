@@ -17,6 +17,14 @@ async function authedGet(path) {
   return data;
 }
 
+// Lägg högst upp
+const API = "https://easyfreightbooking-api.onrender.com";
+const authHeaders = () => ({
+  "Content-Type": "application/json",
+  "Authorization": "Bearer " + (localStorage.getItem("jwt") || "")
+});
+
+
 const COUNTRIES = [
   { code: "SE", name: "Sweden" }, { code: "DK", name: "Denmark" }, { code: "NO", name: "Norway" },
   { code: "FI", name: "Finland" }, { code: "DE", name: "Germany" }, { code: "FR", name: "France" },
