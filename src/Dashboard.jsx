@@ -51,6 +51,8 @@ const COUNTRIES = [
   { code: "UA", name: "Ukraine" }
 ];
 
+const BOOKING_REGEX = /^[A-HJ-NP-TV-Z]{2}-[A-HJ-NP-TV-Z]{3}-\d{5}$/i;
+
 async function getCoordinates(postal, country) {
   // NOTE: this key is used client-side per your existing setup
   const apiKey = "AIzaSyBwOgpWgeY6e4SPNiB1nc_jKKqlN_Yn6YI";
@@ -369,6 +371,28 @@ function Welcome() {
 /* =========================================================
    Protected: Bookings list (expandable)
 ========================================================= */
+function BookingNumberBadge({ value }) {
+  if (!value) return null;
+  const copy = async (e) => {
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(value);
+    } catch {}
+  };
+  return (
+    <span className="inline-flex items-center gap-2 px-2 py-0.5 rounded bg-gray-100 border text-xs text-gray-700">
+      {value}
+      <button
+        onClick={copy}
+        className="text-gray-500 hover:text-gray-700"
+        title="Copy booking number"
+      >
+        ⧉
+      </button>
+    </span>
+  );
+}
+
 function BookingsList({ bookings }) {
   const [openId, setOpenId] = React.useState(null);
   if (!Array.isArray(bookings) || bookings.length === 0) {
@@ -384,17 +408,20 @@ function BookingsList({ bookings }) {
           const routeTo   = to   ? `${to.country_code} ${to.postal_code || ""} ${to.city || ""}`   : "–";
           const isOpen = openId === b.id;
 
+          const priceStr =
+            typeof b.price_eur === "number"
+              ? `${Math.round(b.price_eur)} EUR`
+              : (typeof b.total_price_eur === "number" ? `${Math.round(b.total_price_eur)} EUR` : "—");
+
           return (
             <li key={b.id} className="px-4 py-4 hover:bg-gray-50 transition">
               <div className="flex items-center justify-between cursor-pointer" onClick={() => setOpenId(isOpen ? null : b.id)}>
-                <div className="flex flex-col">
-                  <span className="text-sm text-gray-500">#{String(b.id).slice(0, 8)}</span>
+                <div className="flex flex-col gap-1">
+                  <BookingNumberBadge value={b.booking_number} />
                   <span className="font-medium text-gray-800">{routeFrom} → {routeTo}</span>
                 </div>
                 <div className="flex items-center gap-4">
-                  <span className="text-sm text-gray-600">
-                    {b.chargeable_weight_kg ? `${b.chargeable_weight_kg} kg` : ""}
-                  </span>
+                  <span className="text-sm text-gray-700">{priceStr}</span>
                   <span className="text-gray-400">{isOpen ? "▲" : "▼"}</span>
                 </div>
               </div>
@@ -402,7 +429,6 @@ function BookingsList({ bookings }) {
               {isOpen && (
                 <div className="mt-3 pl-2 border-l border-gray-200 text-sm text-gray-600 space-y-1">
                   <div>Mode: {b.selected_mode?.replaceAll("_", " ") || "—"}</div>
-                  <div>Price: {typeof b.price_eur === "number" ? `${b.price_eur.toFixed(0)} EUR` : "—"}</div>
                   {b.created_at && <div>Created: {new Date(b.created_at).toLocaleString()}</div>}
                   {b.requested_pickup_date && <div>Requested pickup: {new Date(b.requested_pickup_date).toLocaleDateString()}</div>}
                   {b.requested_delivery_date && <div>Requested delivery: {new Date(b.requested_delivery_date).toLocaleDateString()}</div>}
@@ -454,6 +480,10 @@ function ViewBookings() {
   const [bookings, setBookings] = React.useState(null);
   const [err, setErr] = React.useState(null);
 
+  // 🔎 Nytt: sök på bokningsnummer
+  const [query, setQuery] = React.useState("");
+  const [searchMsg, setSearchMsg] = React.useState("");
+
   React.useEffect(() => {
     let alive = true;
     authedGet("/bookings")
@@ -462,9 +492,70 @@ function ViewBookings() {
     return () => { alive = false; };
   }, []);
 
+  async function searchBooking(e) {
+    e.preventDefault();
+    setSearchMsg("");
+    const q = (query || "").toUpperCase().trim();
+    if (!q) {
+      // Tom sökning → ladda alla
+      try {
+        const data = await authedGet("/bookings");
+        setBookings(data);
+      } catch (e) {
+        setErr(String(e.message || e));
+      }
+      return;
+    }
+    if (!BOOKING_REGEX.test(q)) {
+      setSearchMsg("Invalid format. Use XX-LLL-#####");
+      return;
+    }
+    try {
+      const res = await fetch(`${API}/bookings/${encodeURIComponent(q)}`, { headers: authHeaders() });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+      setBookings([data]);
+      setSearchMsg(`Found 1 match for ${q}`);
+    } catch (e) {
+      setBookings([]);
+      setSearchMsg(`No result for ${q}`);
+    }
+  }
+
   return (
     <div>
       <h1 className="text-3xl font-bold mb-4">📦 View bookings</h1>
+
+      {/* Sökfält */}
+      <form onSubmit={searchBooking} className="mb-4 flex flex-col sm:flex-row gap-2">
+        <input
+          className="border rounded p-2 w-full sm:w-80"
+          placeholder="Search by booking number (XX-LLL-#####)"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        <div className="flex gap-2">
+          <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Search</button>
+          <button
+            type="button"
+            className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300"
+            onClick={async () => {
+              setQuery("");
+              setSearchMsg("");
+              try {
+                const data = await authedGet("/bookings");
+                setBookings(data);
+              } catch (e) {
+                setErr(String(e.message || e));
+              }
+            }}
+          >
+            Clear
+          </button>
+        </div>
+      </form>
+      {!!searchMsg && <div className="text-sm mb-2 text-gray-600">{searchMsg}</div>}
+
       {err && <div className="text-red-600 mb-2">{String(err)}</div>}
       {bookings === null ? <div>Loading…</div> : <BookingsList bookings={bookings} />}
     </div>
