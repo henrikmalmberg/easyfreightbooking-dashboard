@@ -369,195 +369,419 @@ function Welcome() {
 }
 
 /* =========================================================
-   Protected: Bookings list (expandable)
+   Protected: Split View (list + details)
 ========================================================= */
 function BookingNumberBadge({ value }) {
   if (!value) return null;
   const copy = async (e) => {
     e.stopPropagation();
-    try {
-      await navigator.clipboard.writeText(value);
-    } catch {}
+    try { await navigator.clipboard.writeText(value); } catch {}
   };
   return (
     <span className="inline-flex items-center gap-2 px-2 py-0.5 rounded bg-gray-100 border text-xs text-gray-700">
       {value}
-      <button
-        onClick={copy}
-        className="text-gray-500 hover:text-gray-700"
-        title="Copy booking number"
-      >
-        ⧉
-      </button>
+      <button onClick={copy} className="text-gray-500 hover:text-gray-700" title="Copy booking number">⧉</button>
     </span>
   );
 }
 
-function BookingsList({ bookings }) {
-  const [openId, setOpenId] = React.useState(null);
-  if (!Array.isArray(bookings) || bookings.length === 0) {
-    return <div className="text-gray-500">No bookings yet.</div>;
-  }
+function DetailRow({ label, value }) {
   return (
-    <div className="bg-white shadow rounded-lg max-w-4xl">
-      <ul className="divide-y divide-gray-200">
-        {bookings.map((b) => {
-          const from = b.sender_address;
-          const to = b.receiver_address;
-          const routeFrom = from ? `${from.country_code} ${from.postal_code || ""} ${from.city || ""}` : "–";
-          const routeTo   = to   ? `${to.country_code} ${to.postal_code || ""} ${to.city || ""}`   : "–";
-          const isOpen = openId === b.id;
+    <div className="flex justify-between text-sm py-0.5">
+      <span className="text-gray-500">{label}</span>
+      <span className="font-medium text-gray-800">{value || "—"}</span>
+    </div>
+  );
+}
 
-          const priceStr =
-            typeof b.price_eur === "number"
-              ? `${Math.round(b.price_eur)} EUR`
-              : (typeof b.total_price_eur === "number" ? `${Math.round(b.total_price_eur)} EUR` : "—");
+function DetailCard({ title, value }) {
+  return (
+    <div className="border rounded p-3">
+      <div className="text-xs uppercase tracking-wide text-gray-500">{title}</div>
+      <div className="mt-1 text-gray-800">{value || "—"}</div>
+    </div>
+  );
+}
 
-          return (
-            <li key={b.id} className="px-4 py-4 hover:bg-gray-50 transition">
-              <div className="flex items-center justify-between cursor-pointer" onClick={() => setOpenId(isOpen ? null : b.id)}>
-                <div className="flex flex-col gap-1">
-                  <BookingNumberBadge value={b.booking_number} />
-                  <span className="font-medium text-gray-800">{routeFrom} → {routeTo}</span>
-                </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-sm text-gray-700">{priceStr}</span>
-                  <span className="text-gray-400">{isOpen ? "▲" : "▼"}</span>
+function BookingsSplitView({ adminMode = false }) {
+  const [all, setAll] = React.useState(null);
+  const [err, setErr] = React.useState(null);
+  const [selected, setSelected] = React.useState(null);
+
+  // Kolumnfilter
+  const [filters, setFilters] = React.useState({
+    booking_number: "",
+    load_place: "",
+    unload_place: "",
+    weight: "",
+    ldm: "",
+    load_date: "",
+    unload_date: "",
+    ref1: "",
+    ref2: "",
+    status: "",
+  });
+
+  // Quick search
+  const [quick, setQuick] = React.useState("");
+  const [quickMsg, setQuickMsg] = React.useState("");
+
+  React.useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        if (adminMode) {
+          const me = await authedGet("/me");
+          if (me?.user?.role !== "superadmin") throw new Error("Forbidden");
+        }
+        const r = await fetch(`${API}/bookings`, { headers: { Authorization: `Bearer ${getToken()}` } });
+        const j = await r.json();
+        if (!r.ok) throw new Error(j?.error || `HTTP ${r.status}`);
+        if (alive) { setAll(j); setSelected(j?.[0] || null); }
+      } catch (e) {
+        if (alive) setErr(String(e.message || e));
+      }
+    })();
+    return () => { alive = false; };
+  }, [adminMode]);
+
+  const statusColors = {
+    NEW: "bg-gray-200 text-gray-800",
+    CONFIRMED: "bg-blue-100 text-blue-800",
+    PICKUP_PLANNED: "bg-amber-100 text-amber-800",
+    PICKED_UP: "bg-indigo-100 text-indigo-800",
+    IN_TRANSIT: "bg-sky-100 text-sky-800",
+    DELIVERY_PLANNED: "bg-teal-100 text-teal-800",
+    DELIVERED: "bg-green-100 text-green-800",
+    COMPLETED: "bg-emerald-200 text-emerald-900",
+    ON_HOLD: "bg-yellow-100 text-yellow-900",
+    CANCELLED: "bg-red-100 text-red-800",
+    EXCEPTION: "bg-rose-100 text-rose-800",
+  };
+
+  const fmtDate = (v) => (v || "");
+  const sum = (arr, get) => (Array.isArray(arr) ? arr.reduce((t, x) => t + (Number(get(x)) || 0), 0) : 0);
+
+  const rows = React.useMemo(() => {
+    if (!Array.isArray(all)) return [];
+    return all.map((b) => {
+      const from = b.sender_address;
+      const to = b.receiver_address;
+      const loadPlace = from ? `${from.country_code || ""}-${from.postal_code || ""} ${from.city || ""}`.trim() : "";
+      const unloadPlace = to ? `${to.country_code || ""}-${to.postal_code || ""} ${to.city || ""}`.trim() : "";
+
+      const weight = sum(b.goods || [], (g) => g.weight);
+      const ldm = sum(b.goods || [], (g) => g.ldm);
+
+      const loadDate = b.loading_planned_date || b.loading_requested_date || b.requested_pickup_date || null;
+      const unloadDate = b.unloading_planned_date || b.unloading_requested_date || b.requested_delivery_date || null;
+
+      const ref1 = b?.references?.reference1 || "";
+      const ref2 = b?.references?.reference2 || "";
+
+      return {
+        raw: b,
+        booking_number: b.booking_number || "",
+        load_place: loadPlace,
+        unload_place: unloadPlace,
+        weight,
+        ldm,
+        load_date: loadDate,
+        unload_date: unloadDate,
+        ref1,
+        ref2,
+        status: b.status || "NEW",
+      };
+    });
+  }, [all]);
+
+  const filtered = React.useMemo(() => {
+    const f = filters;
+    const like = (v, q) => String(v ?? "").toLowerCase().includes(String(q ?? "").toLowerCase());
+    return rows.filter((r) => {
+      if (f.booking_number && !like(r.booking_number, f.booking_number)) return false;
+      if (f.load_place && !like(r.load_place, f.load_place)) return false;
+      if (f.unload_place && !like(r.unload_place, f.unload_place)) return false;
+      if (f.weight && !like(r.weight, f.weight)) return false;
+      if (f.ldm && !like(r.ldm, f.ldm)) return false;
+      if (f.load_date && !like(fmtDate(r.load_date), f.load_date)) return false;
+      if (f.unload_date && !like(fmtDate(r.unload_date), f.unload_date)) return false;
+      if (f.ref1 && !like(r.ref1, f.ref1)) return false;
+      if (f.ref2 && !like(r.ref2, f.ref2)) return false;
+      if (f.status && r.status !== f.status) return false;
+      return true;
+    });
+  }, [rows, filters]);
+
+  async function quickSearch(e) {
+    e.preventDefault();
+    setQuickMsg("");
+    const q = (quick || "").toUpperCase().trim();
+    if (!q) return;
+    if (!BOOKING_REGEX.test(q)) {
+      setQuickMsg("Format: XX-LLL-#####");
+      return;
+    }
+    try {
+      const r = await fetch(`${API}/bookings/${encodeURIComponent(q)}`, { headers: authHeaders() });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j?.error || `HTTP ${r.status}`);
+      setAll([j]); setSelected(j);
+      setFilters({ booking_number: q, load_place: "", unload_place: "", weight: "", ldm: "", load_date: "", unload_date: "", ref1: "", ref2: "", status: "" });
+      setQuickMsg("1 match");
+    } catch {
+      setAll([]); setSelected(null); setQuickMsg("No result");
+    }
+  }
+
+  const copy = async (t) => { try { await navigator.clipboard.writeText(t); } catch {} };
+
+  if (adminMode && err === "Forbidden") return <div className="text-red-600">403 – Admin only</div>;
+
+  return (
+    <div className="flex gap-4 h-[calc(100vh-140px)]">
+      {/* Vänster: lista */}
+      <section className="w-full md:w-[560px] bg-white border rounded-lg shadow-sm flex flex-col overflow-hidden">
+        <div className="p-3 border-b flex items-center gap-2">
+          <form onSubmit={quickSearch} className="flex gap-2 w-full">
+            <input
+              className="border rounded p-2 flex-1"
+              placeholder="Quick search booking number (XX-LLL-#####)"
+              value={quick}
+              onChange={(e) => setQuick(e.target.value)}
+            />
+            <button className="px-3 rounded bg-blue-600 text-white">Search</button>
+            <button
+              type="button"
+              className="px-3 rounded bg-gray-200"
+              onClick={async () => {
+                setQuick(""); setQuickMsg("");
+                try {
+                  const r = await fetch(`${API}/bookings`, { headers: { Authorization: `Bearer ${getToken()}` } });
+                  const j = await r.json();
+                  if (!r.ok) throw new Error(j?.error || `HTTP ${r.status}`);
+                  setAll(j); setSelected(j?.[0] || null);
+                  setFilters({ booking_number: "", load_place: "", unload_place: "", weight: "", ldm: "", load_date: "", unload_date: "", ref1: "", ref2: "", status: "" });
+                } catch (e) { setErr(String(e.message || e)); }
+              }}
+            >
+              Clear
+            </button>
+          </form>
+          {quickMsg && <span className="text-xs text-gray-600">{quickMsg}</span>}
+        </div>
+
+        <div className="overflow-auto">
+          <table className="min-w-full text-sm">
+            <thead className="sticky top-0 bg-gray-50 z-10">
+              <tr className="text-left">
+                <th className="px-3 py-2 w-40">Booking #</th>
+                <th className="px-3 py-2">Load Place</th>
+                <th className="px-3 py-2">Unload Place</th>
+                <th className="px-3 py-2 w-20">Weight</th>
+                <th className="px-3 py-2 w-20">LDM</th>
+                <th className="px-3 py-2 w-36">Booked Load Date</th>
+                <th className="px-3 py-2 w-40">Booked Unload Date</th>
+                <th className="px-3 py-2 w-40">Reference 1</th>
+                <th className="px-3 py-2 w-40">Reference 2</th>
+                <th className="px-3 py-2 w-28">Status</th>
+              </tr>
+              {/* filterrad */}
+              <tr className="text-left bg-white border-b">
+                <th className="px-3 py-1">
+                  <input className="w-full border rounded p-1" placeholder="Contains…" value={filters.booking_number}
+                         onChange={(e)=>setFilters({...filters, booking_number:e.target.value})}/>
+                </th>
+                <th className="px-3 py-1">
+                  <input className="w-full border rounded p-1" placeholder="Contains…" value={filters.load_place}
+                         onChange={(e)=>setFilters({...filters, load_place:e.target.value})}/>
+                </th>
+                <th className="px-3 py-1">
+                  <input className="w-full border rounded p-1" placeholder="Contains…" value={filters.unload_place}
+                         onChange={(e)=>setFilters({...filters, unload_place:e.target.value})}/>
+                </th>
+                <th className="px-3 py-1">
+                  <input className="w-full border rounded p-1" placeholder="Equals…" value={filters.weight}
+                         onChange={(e)=>setFilters({...filters, weight:e.target.value})}/>
+                </th>
+                <th className="px-3 py-1">
+                  <input className="w-full border rounded p-1" placeholder="Equals…" value={filters.ldm}
+                         onChange={(e)=>setFilters({...filters, ldm:e.target.value})}/>
+                </th>
+                <th className="px-3 py-1">
+                  <input className="w-full border rounded p-1" placeholder="YYYY-MM-DD" value={filters.load_date}
+                         onChange={(e)=>setFilters({...filters, load_date:e.target.value})}/>
+                </th>
+                <th className="px-3 py-1">
+                  <input className="w-full border rounded p-1" placeholder="YYYY-MM-DD" value={filters.unload_date}
+                         onChange={(e)=>setFilters({...filters, unload_date:e.target.value})}/>
+                </th>
+                <th className="px-3 py-1">
+                  <input className="w-full border rounded p-1" placeholder="Contains…" value={filters.ref1}
+                         onChange={(e)=>setFilters({...filters, ref1:e.target.value})}/>
+                </th>
+                <th className="px-3 py-1">
+                  <input className="w-full border rounded p-1" placeholder="Contains…" value={filters.ref2}
+                         onChange={(e)=>setFilters({...filters, ref2:e.target.value})}/>
+                </th>
+                <th className="px-3 py-1">
+                  <select className="w-full border rounded p-1" value={filters.status}
+                          onChange={(e)=>setFilters({...filters, status:e.target.value})}>
+                    <option value="">All</option>
+                    {[
+                      "NEW","CONFIRMED","PICKUP_PLANNED","PICKED_UP","IN_TRANSIT",
+                      "DELIVERY_PLANNED","DELIVERED","COMPLETED","ON_HOLD","CANCELLED","EXCEPTION"
+                    ].map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((r) => {
+                const isSel = selected?.id === r.raw.id;
+                return (
+                  <tr key={r.raw.id}
+                      className={`cursor-pointer ${isSel ? "bg-blue-50" : "hover:bg-gray-50"}`}
+                      onClick={()=>setSelected(r.raw)}>
+                    <td className="px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <BookingNumberBadge value={r.booking_number} />
+                        <button className="text-gray-400 hover:text-gray-700" onClick={(e)=>{e.stopPropagation(); copy(r.booking_number);}}>⧉</button>
+                      </div>
+                    </td>
+                    <td className="px-3 py-2">{r.load_place}</td>
+                    <td className="px-3 py-2">{r.unload_place}</td>
+                    <td className="px-3 py-2 text-right">{r.weight ? Math.round(r.weight) : ""}</td>
+                    <td className="px-3 py-2 text-right">{r.ldm ? Number(r.ldm).toFixed(1) : ""}</td>
+                    <td className="px-3 py-2">{fmtDate(r.load_date)}</td>
+                    <td className="px-3 py-2">{fmtDate(r.unload_date)}</td>
+                    <td className="px-3 py-2 truncate max-w-[160px]" title={r.ref1}>{r.ref1}</td>
+                    <td className="px-3 py-2 truncate max-w-[160px]" title={r.ref2}>{r.ref2}</td>
+                    <td className="px-3 py-2">
+                      <span className={`text-xs px-2 py-0.5 rounded ${statusColors[r.status] || "bg-gray-100"}`}>{r.status}</span>
+                    </td>
+                  </tr>
+                );
+              })}
+              {filtered.length === 0 && (
+                <tr><td colSpan={10} className="px-3 py-6 text-center text-gray-500">No bookings</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* Höger: detaljer */}
+      <section className="flex-1 overflow-auto">
+        {!selected ? (
+          <div className="text-gray-500">Select a booking from the list.</div>
+        ) : (
+          <div className="bg-white border rounded-lg shadow-sm p-4 md:p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <span className="text-lg font-semibold">{selected.booking_number}</span>
+                <span className={`text-xs px-2 py-0.5 rounded ${
+                  statusColors[selected.status] || "bg-gray-100"
+                }`}>{selected.status || "NEW"}</span>
+              </div>
+              <div className="text-right text-sm text-gray-600">
+                <div>Booked: {selected.booking_date || (selected.created_at ? new Date(selected.created_at).toLocaleDateString() : "—")}</div>
+                {typeof selected.price_eur === "number" && (
+                  <div className="font-medium">{Math.round(selected.price_eur)} EUR</div>
+                )}
+              </div>
+            </div>
+
+            {/* Route */}
+            <div className="mb-4">
+              <div className="text-gray-700 font-medium">
+                {selected?.sender_address?.country_code} {selected?.sender_address?.postal_code} {selected?.sender_address?.city}
+                {"  →  "}
+                {selected?.receiver_address?.country_code} {selected?.receiver_address?.postal_code} {selected?.receiver_address?.city}
+              </div>
+              <div className="text-xs text-gray-500">Mode: {selected.selected_mode?.replaceAll("_"," ") || "—"}</div>
+            </div>
+
+            {/* Dates */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="border rounded p-3">
+                <div className="font-semibold mb-2">Pickup</div>
+                <DetailRow label="Requested" value={`${fmtDate(selected.loading_requested_date)} ${selected.loading_requested_time || ""}`.trim()} />
+                <DetailRow label="Planned" value={`${fmtDate(selected.loading_planned_date)} ${selected.loading_planned_time || ""}`.trim()} />
+                <DetailRow label="Actual" value={`${fmtDate(selected.loading_actual_date)} ${selected.loading_actual_time || ""}`.trim()} />
+              </div>
+              <div className="border rounded p-3">
+                <div className="font-semibold mb-2">Delivery</div>
+                <DetailRow label="Requested" value={`${fmtDate(selected.unloading_requested_date)} ${selected.unloading_requested_time || ""}`.trim()} />
+                <DetailRow label="Planned" value={`${fmtDate(selected.unloading_planned_date)} ${selected.unloading_planned_time || ""}`.trim()} />
+                <DetailRow label="Actual" value={`${fmtDate(selected.unloading_actual_date)} ${selected.unloading_actual_time || ""}`.trim()} />
+              </div>
+            </div>
+
+            {/* Goods */}
+            {Array.isArray(selected.goods) && selected.goods.length > 0 && (
+              <div className="mt-4">
+                <div className="font-semibold mb-2">Goods</div>
+                <div className="rounded border overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-3 py-2 text-left">Type</th>
+                        <th className="px-3 py-2 text-right">Qty</th>
+                        <th className="px-3 py-2 text-right">Weight</th>
+                        <th className="px-3 py-2 text-right">L×W×H (cm)</th>
+                        <th className="px-3 py-2 text-right">LDM</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selected.goods.map((g, i) => (
+                        <tr key={i} className="border-t">
+                          <td className="px-3 py-2">{g.type}</td>
+                          <td className="px-3 py-2 text-right">{g.quantity}</td>
+                          <td className="px-3 py-2 text-right">{g.weight}</td>
+                          <td className="px-3 py-2 text-right">{g.length}×{g.width}×{g.height}</td>
+                          <td className="px-3 py-2 text-right">{g.ldm ?? ""}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
+            )}
 
-              {isOpen && (
-                <div className="mt-3 pl-2 border-l border-gray-200 text-sm text-gray-600 space-y-1">
-                  <div>Mode: {b.selected_mode?.replaceAll("_", " ") || "—"}</div>
-                  {b.created_at && <div>Created: {new Date(b.created_at).toLocaleString()}</div>}
-                  {b.requested_pickup_date && <div>Requested pickup: {new Date(b.requested_pickup_date).toLocaleDateString()}</div>}
-                  {b.requested_delivery_date && <div>Requested delivery: {new Date(b.requested_delivery_date).toLocaleDateString()}</div>}
-                  {Array.isArray(b.goods) && b.goods.map((g, idx) => (
-                    <div key={idx} className="ml-2">
-                      📦 Goods #{idx + 1}: {g.weight} kg, {g.length}×{g.width}×{g.height} cm, qty: {g.quantity}
-                    </div>
-                  ))}
-                  {b.co2_emissions && <div>🌍 CO₂: {Number(b.co2_emissions).toFixed(1)} kg</div>}
-                </div>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+            {/* References */}
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <DetailCard title="Reference 1" value={selected?.references?.reference1} />
+              <DetailCard title="Reference 2" value={selected?.references?.reference2} />
+            </div>
+
+            {/* CO2 & Transit */}
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
+              {selected.co2_emissions && <div>🌍 CO₂: {Number(selected.co2_emissions).toFixed(1)} kg</div>}
+              {selected.transit_time_days && <div>Transit time: {selected.transit_time_days}</div>}
+            </div>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+/* Wrappers för sidorna */
+function ViewBookings() {
+  return (
+    <div>
+      <h1 className="text-3xl font-bold mb-4">📦 View bookings</h1>
+      <BookingsSplitView adminMode={false} />
     </div>
   );
 }
 
 function AdminAllBookings() {
-  const [bookings, setBookings] = React.useState(null);
-  const [err, setErr] = React.useState(null);
-
-  React.useEffect(() => {
-    // 1) Verifiera roll via /me
-    authedGet("/me")
-      .then((m) => {
-        if (m?.user?.role !== "superadmin") throw new Error("Forbidden");
-        // 2) Hämta alla bokningar (servern släpper igenom superadmin)
-        return fetch(`${API}/bookings`, { headers: { Authorization: `Bearer ${getToken()}` } });
-      })
-      .then((r) => r.json().then((j) => ({ ok: r.ok, j })))
-      .then(({ ok, j }) => (ok ? setBookings(j) : setErr(j.error || "HTTP error")))
-      .catch((e) => setErr(e.message));
-  }, []);
-
-  if (err === "Forbidden") return <div className="text-red-600">403 – Admin only</div>;
-
   return (
     <div>
       <h1 className="text-3xl font-bold mb-4">🛡️ Admin: All bookings</h1>
-      {err && err !== "Forbidden" && <div className="text-red-600 mb-2">{String(err)}</div>}
-      {bookings === null ? <div>Loading…</div> : <BookingsList bookings={bookings} />}
-    </div>
-  );
-}
-
-function ViewBookings() {
-  const [bookings, setBookings] = React.useState(null);
-  const [err, setErr] = React.useState(null);
-
-  // 🔎 Nytt: sök på bokningsnummer
-  const [query, setQuery] = React.useState("");
-  const [searchMsg, setSearchMsg] = React.useState("");
-
-  React.useEffect(() => {
-    let alive = true;
-    authedGet("/bookings")
-      .then((data) => alive && setBookings(data))
-      .catch((e) => alive && setErr(e.message));
-    return () => { alive = false; };
-  }, []);
-
-  async function searchBooking(e) {
-    e.preventDefault();
-    setSearchMsg("");
-    const q = (query || "").toUpperCase().trim();
-    if (!q) {
-      // Tom sökning → ladda alla
-      try {
-        const data = await authedGet("/bookings");
-        setBookings(data);
-      } catch (e) {
-        setErr(String(e.message || e));
-      }
-      return;
-    }
-    if (!BOOKING_REGEX.test(q)) {
-      setSearchMsg("Invalid format. Use XX-LLL-#####");
-      return;
-    }
-    try {
-      const res = await fetch(`${API}/bookings/${encodeURIComponent(q)}`, { headers: authHeaders() });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
-      setBookings([data]);
-      setSearchMsg(`Found 1 match for ${q}`);
-    } catch (e) {
-      setBookings([]);
-      setSearchMsg(`No result for ${q}`);
-    }
-  }
-
-  return (
-    <div>
-      <h1 className="text-3xl font-bold mb-4">📦 View bookings</h1>
-
-      {/* Sökfält */}
-      <form onSubmit={searchBooking} className="mb-4 flex flex-col sm:flex-row gap-2">
-        <input
-          className="border rounded p-2 w-full sm:w-80"
-          placeholder="Search by booking number (XX-LLL-#####)"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-        <div className="flex gap-2">
-          <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Search</button>
-          <button
-            type="button"
-            className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300"
-            onClick={async () => {
-              setQuery("");
-              setSearchMsg("");
-              try {
-                const data = await authedGet("/bookings");
-                setBookings(data);
-              } catch (e) {
-                setErr(String(e.message || e));
-              }
-            }}
-          >
-            Clear
-          </button>
-        </div>
-      </form>
-      {!!searchMsg && <div className="text-sm mb-2 text-gray-600">{searchMsg}</div>}
-
-      {err && <div className="text-red-600 mb-2">{String(err)}</div>}
-      {bookings === null ? <div>Loading…</div> : <BookingsList bookings={bookings} />}
+      <BookingsSplitView adminMode={true} />
     </div>
   );
 }
