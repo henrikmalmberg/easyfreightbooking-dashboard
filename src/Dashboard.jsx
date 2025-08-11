@@ -773,25 +773,16 @@ function BookingsSplitView({ adminMode = false }) {
             </div>
  
 {/* Customer + user */}
-{(selected?.organization || selected?.booked_by) && (
+{selected?.organization && (
   <div className="mb-3 text-sm text-gray-600">
-    {selected?.organization && (
-      <div>
-        <span className="text-gray-500">Customer:</span>{" "}
-        {selected.organization.company_name || "—"}
-        {selected?.booked_by?.name ? `, ${selected.booked_by.name}` : ""}
-      </div>
-    )}
-
-    {selected?.booked_by && (
-      <div>
-        <span className="text-gray-500">Booked by:</span>{" "}
-        {selected.booked_by.name}
-        {selected.booked_by.email ? ` <${selected.booked_by.email}>` : ""}
-      </div>
-    )}
+    <div>
+      <span className="text-gray-500">Customer:</span>{" "}
+      {selected.organization.company_name || "—"}
+      {selected?.booked_by?.name ? `, ${selected.booked_by.name}` : ""}
+    </div>
   </div>
 )}
+
 
 
             {/* Route */}
