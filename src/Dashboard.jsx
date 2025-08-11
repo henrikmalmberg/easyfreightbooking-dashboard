@@ -532,6 +532,22 @@ function BookingsSplitView({ adminMode = false }) {
     };
   }, [adminMode]);
 
+            const computeChargeableFromGoods = (goods = []) =>
+            goods.reduce((tot, g) => {
+            const w  = Number(g.weight) || 0;
+            const l  = (Number(g.length) || 0) / 100;
+            const wi = (Number(g.width)  || 0) / 100;
+            const h  = (Number(g.height) || 0) / 100;
+            const q  = Number(g.quantity) || 0;
+            const vol = l * wi * h * 335;
+             return tot + Math.max(w, vol) * q;
+              }, 0);
+  // fortfarande i BookingsSplitView, innan return-blocket
+const chargeable =
+  typeof selected?.chargeable_weight === "number"
+    ? selected.chargeable_weight
+    : computeChargeableFromGoods(selected?.goods);
+
   const statusColors = {
     NEW: "bg-gray-200 text-gray-800",
     CONFIRMED: "bg-blue-100 text-blue-800",
@@ -887,19 +903,7 @@ function BookingsSplitView({ adminMode = false }) {
        
 
             {/* Goods */}
-            const computeChargeableFromGoods = (goods = []) =>
-            goods.reduce((tot, g) => {
-            const w  = Number(g.weight) || 0;
-            const l  = (Number(g.length) || 0) / 100;
-            const wi = (Number(g.width)  || 0) / 100;
-            const h  = (Number(g.height) || 0) / 100;
-            const q  = Number(g.quantity) || 0;
-            const vol = l * wi * h * 335;
-             return tot + Math.max(w, vol) * q;
-              }, 0);
 
-const chargeable =
-  selected?.chargeable_weight ?? computeChargeableFromGoods(selected?.goods || []);
 
             {Array.isArray(selected.goods) && selected.goods.length > 0 && (
               <div className="mt-4">
