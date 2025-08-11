@@ -811,49 +811,54 @@ function BookingsSplitView({ adminMode = false }) {
             </div>
 
             {/* Dates */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="border rounded p-3">
-                <div className="font-semibold mb-2">Pickup</div>
-                <DetailRow
-                  label="Requested"
-                  value={`${selected.loading_requested_date || ""} ${
-                    selected.loading_requested_time || ""
-                  }`.trim()}
-                />
-                <DetailRow
-                  label="Planned"
-                  value={`${selected.loading_planned_date || ""} ${
-                    selected.loading_planned_time || ""
-                  }`.trim()}
-                />
-                <DetailRow
-                  label="Actual"
-                  value={`${selected.loading_actual_date || ""} ${
-                    selected.loading_actual_time || ""
-                  }`.trim()}
-                />
-              </div>
-              <div className="border rounded p-3">
-                <div className="font-semibold mb-2">Delivery</div>
-                <DetailRow
-                  label="Requested"
-                  value={`${selected.unloading_requested_date || ""} ${
-                    selected.unloading_requested_time || ""
-                  }`.trim()}
-                />
-                <DetailRow
-                  label="Planned"
-                  value={`${selected.unloading_planned_date || ""} ${
-                    selected.unloading_planned_time || ""
-                  }`.trim()}
-                />
-                <DetailRow
-                  label="Actual"
-                  value={`${selected.unloading_actual_date || ""} ${
-                    selected.unloading_actual_time || ""
-                  }`.trim()}
-                />
-              </div>
+<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  {/* PICKUP */}
+  <div className="border rounded p-3">
+    <div className="font-semibold mb-2">Pickup</div>
+
+    {/* Adressinfo */}
+    <AddressDetails a={selected.sender_address} />
+
+    {/* Datum/tider */}
+    <hr className="my-2" />
+    <DetailRow
+      label="Requested"
+      value={`${selected.loading_requested_date || ""} ${selected.loading_requested_time || ""}`.trim()}
+    />
+    <DetailRow
+      label="Planned"
+      value={`${selected.loading_planned_date || ""} ${selected.loading_planned_time || ""}`.trim()}
+    />
+    <DetailRow
+      label="Actual"
+      value={`${selected.loading_actual_date || ""} ${selected.loading_actual_time || ""}`.trim()}
+    />
+  </div>
+
+  {/* DELIVERY */}
+  <div className="border rounded p-3">
+    <div className="font-semibold mb-2">Delivery</div>
+
+    {/* Adressinfo */}
+    <AddressDetails a={selected.receiver_address} />
+
+    {/* Datum/tider */}
+    <hr className="my-2" />
+    <DetailRow
+      label="Requested"
+      value={`${selected.unloading_requested_date || ""} ${selected.unloading_requested_time || ""}`.trim()}
+    />
+    <DetailRow
+      label="Planned"
+      value={`${selected.unloading_planned_date || ""} ${selected.unloading_planned_time || ""}`.trim()}
+    />
+    <DetailRow
+      label="Actual"
+      value={`${selected.unloading_actual_date || ""} ${selected.unloading_actual_time || ""}`.trim()}
+    />
+  </div>
+</div>
+
             </div>
 
             {/* Goods */}
