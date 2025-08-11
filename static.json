@@ -1,0 +1,8 @@
+{
+  "routes": [
+    { "src": "/(.*)", "dest": "/index.html" }
+  ],
+  "redirects": [
+    { "source": "/", "destination": "/dashboard", "statusCode": 302 }
+  ]
+}
