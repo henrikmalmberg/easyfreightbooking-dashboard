@@ -560,7 +560,7 @@ function BookingsSplitView({ adminMode = false }) {
       const unloadPlace = to
         ? `${to.country_code || ""}-${to.postal_code || ""} ${to.city || ""}`.trim()
         : "";
-      const weight = sum(b.goods || [], (g) => g.weight);
+      const weight = sum(b. || [], (g) => g.weight);
       return {
         raw: b,
         booking_number: b.booking_number || "",
@@ -913,6 +913,14 @@ function BookingsSplitView({ adminMode = false }) {
                         </tr>
                       ))}
                     </tbody>
+                    <tfoot>
+  <tr>
+    <td colSpan={5} className="px-3 py-2 bg-gray-50 text-right font-medium">
+      Total chargeable: {Math.round(chargeable_weight)} kg
+    </td>
+  </tr>
+</tfoot>
+
                   </table>
                 </div>
               </div>
