@@ -436,6 +436,7 @@ function BookingsSplitView({ adminMode = false }) {
     unload_place: "",
     weight: "",
     status: "",
+    customer: "", // 👈 NEW
   });
 
   React.useEffect(() => {
@@ -488,6 +489,7 @@ function BookingsSplitView({ adminMode = false }) {
         unload_place: unloadPlace,
         weight,
         status: b.status || "NEW",
+        customer: adminMode ? (b.organization?.company_name || "") : "",   // 👈 NEW
       };
     });
   }, [all]);
@@ -500,6 +502,8 @@ function BookingsSplitView({ adminMode = false }) {
       if (filters.unload_place && !like(r.unload_place, filters.unload_place)) return false;
       if (filters.weight && !like(r.weight, filters.weight)) return false;
       if (filters.status && r.status !== filters.status) return false;
+      if (adminMode && filters.customer && !like(r.customer, filters.customer)) return false;
+
       return true;
     });
   }, [rows, filters]);
@@ -517,40 +521,46 @@ function BookingsSplitView({ adminMode = false }) {
             <thead className="sticky top-0 bg-gray-50 z-10">
               <tr className="text-left">
                 <th className="px-3 py-2 w-44">Booking #</th>
+                {adminMode && <th className="px-3 py-2 w-56">Customer</th>}{/* 👈 NEW */}
                 <th className="px-3 py-2">Load Place</th>
                 <th className="px-3 py-2">Unload Place</th>
                 <th className="px-3 py-2 w-24">Weight</th>
                 <th className="px-3 py-2 w-28">Status</th>
               </tr>
               {/* Filterrad */}
-              <tr className="text-left bg-white border-b">
-                <th className="px-3 py-1">
-                  <input className="w-full border rounded p-1" placeholder="Contains…" value={filters.booking_number}
-                         onChange={(e)=>setFilters({...filters, booking_number:e.target.value})}/>
-                </th>
-                <th className="px-3 py-1">
-                  <input className="w-full border rounded p-1" placeholder="Contains…" value={filters.load_place}
-                         onChange={(e)=>setFilters({...filters, load_place:e.target.value})}/>
-                </th>
-                <th className="px-3 py-1">
-                  <input className="w-full border rounded p-1" placeholder="Contains…" value={filters.unload_place}
-                         onChange={(e)=>setFilters({...filters, unload_place:e.target.value})}/>
-                </th>
-                <th className="px-3 py-1">
-                  <input className="w-full border rounded p-1" placeholder="Equals…" value={filters.weight}
-                         onChange={(e)=>setFilters({...filters, weight:e.target.value})}/>
-                </th>
-                <th className="px-3 py-1">
-                  <select className="w-full border rounded p-1" value={filters.status}
-                          onChange={(e)=>setFilters({...filters, status:e.target.value})}>
-                    <option value="">All</option>
-                    {[
-                      "NEW","CONFIRMED","PICKUP_PLANNED","PICKED_UP","IN_TRANSIT",
-                      "DELIVERY_PLANNED","DELIVERED","COMPLETED","ON_HOLD","CANCELLED","EXCEPTION"
-                    ].map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </th>
-              </tr>
+<tr className="text-left bg-white border-b">
+  <th className="px-3 py-1">
+    <input className="w-full border rounded p-1" placeholder="Contains…" value={filters.booking_number}
+           onChange={(e)=>setFilters({...filters, booking_number:e.target.value})}/>
+  </th>
+  {adminMode && (
+    <th className="px-3 py-1">
+      <input className="w-full border rounded p-1" placeholder="Contains…" value={filters.customer}
+             onChange={(e)=>setFilters({...filters, customer:e.target.value})}/>
+    </th>
+  )}
+  <th className="px-3 py-1">
+    <input className="w-full border rounded p-1" placeholder="Contains…" value={filters.load_place}
+           onChange={(e)=>setFilters({...filters, load_place:e.target.value})}/>
+  </th>
+  <th className="px-3 py-1">
+    <input className="w-full border rounded p-1" placeholder="Contains…" value={filters.unload_place}
+           onChange={(e)=>setFilters({...filters, unload_place:e.target.value})}/>
+  </th>
+  <th className="px-3 py-1">
+    <input className="w-full border rounded p-1" placeholder="Equals…" value={filters.weight}
+           onChange={(e)=>setFilters({...filters, weight:e.target.value})}/>
+  </th>
+  <th className="px-3 py-1">
+    <select className="w-full border rounded p-1" value={filters.status}
+            onChange={(e)=>setFilters({...filters, status:e.target.value})}>
+      <option value="">All</option>
+      {["NEW","CONFIRMED","PICKUP_PLANNED","PICKED_UP","IN_TRANSIT","DELIVERY_PLANNED","DELIVERED","COMPLETED","ON_HOLD","CANCELLED","EXCEPTION"]
+        .map(s => <option key={s} value={s}>{s}</option>)}
+    </select>
+  </th>
+</tr>
+
             </thead>
             <tbody>
               {filtered.map((r) => {
@@ -807,6 +817,24 @@ function ResultCard({ transport, selectedOption, onSelect }) {
               )}
             </>
           )}
+
+          {/* Meta: customer + user (only if available) */}
+{(selected.organization || selected.booked_by) && (
+  <div className="mb-3 text-sm text-gray-600">
+    {selected.organization && (
+      <span className="mr-4">
+        <span className="text-gray-500">Customer:</span> {selected.organization.company_name}
+      </span>
+    )}
+    {selected.booked_by && (
+      <span>
+        <span className="text-gray-500">Booked by:</span> {selected.booked_by.name}
+        {selected.booked_by.email ? ` <${selected.booked_by.email}>` : ""}
+      </span>
+    )}
+  </div>
+)}
+
         </div>
 
         <div className="text-blue-600 font-bold text-lg">{transport.total_price}</div>
