@@ -987,11 +987,18 @@ function ResultCard({ transport, selectedOption, onSelect }) {
   return (
     <div
       onClick={() => onSelect(transport)}
-      className={`cursor-pointer border rounded-lg p-4 mb-3 bg-white shadow-sm transition ${isSelected ? "border-blue-600 bg-blue-50" : "hover:bg-blue-50"}`}
+      className={`cursor-pointer border rounded-lg p-4 mb-3 bg-white shadow-sm transition ${
+        isSelected ? "border-blue-600 bg-blue-50" : "hover:bg-blue-50"
+      }`}
     >
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2 text-lg font-semibold capitalize relative">
-          <input type="radio" name="selectedTransport" checked={isSelected} onChange={() => onSelect(transport)} />
+          <input
+            type="radio"
+            name="selectedTransport"
+            checked={isSelected}
+            onChange={() => onSelect(transport)}
+          />
           <span>{icons[transport.mode]}</span>
           <span>{transport.mode.replace("_", " ")}</span>
 
@@ -999,7 +1006,10 @@ function ResultCard({ transport, selectedOption, onSelect }) {
             <>
               <span
                 className="ml-1 text-gray-400 cursor-pointer hover:text-blue-600"
-                onClick={(e) => { e.stopPropagation(); setShowInfo(!showInfo); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowInfo(!showInfo);
+                }}
               >
                 ⓘ
               </span>
@@ -1010,24 +1020,6 @@ function ResultCard({ transport, selectedOption, onSelect }) {
               )}
             </>
           )}
-
-          {/* Meta: customer + user (only if available) */}
-{(selected.organization || selected.booked_by) && (
-  <div className="mb-3 text-sm text-gray-600">
-    {selected.organization && (
-      <span className="mr-4">
-        <span className="text-gray-500">Customer:</span> {selected.organization.company_name}
-      </span>
-    )}
-    {selected.booked_by && (
-      <span>
-        <span className="text-gray-500">Booked by:</span> {selected.booked_by.name}
-        {selected.booked_by.email ? ` <${selected.booked_by.email}>` : ""}
-      </span>
-    )}
-  </div>
-)}
-
         </div>
 
         <div className="text-blue-600 font-bold text-lg">{transport.total_price}</div>
@@ -1036,11 +1028,14 @@ function ResultCard({ transport, selectedOption, onSelect }) {
       <div className="text-sm text-gray-600 space-y-1">
         <div><strong>Earliest pickup:</strong> {transport.earliest_pickup}</div>
         <div><strong>Transit time:</strong> {transport.days} days</div>
-        {transport.co2 && <div><strong>🌍 CO₂ emissions:</strong> {(transport.co2 / 1000).toFixed(1)} kg</div>}
+        {transport.co2 && (
+          <div><strong>🌍 CO₂ emissions:</strong> {(transport.co2 / 1000).toFixed(1)} kg</div>
+        )}
       </div>
     </div>
   );
 }
+
 
 
 function AdminPricing() {
