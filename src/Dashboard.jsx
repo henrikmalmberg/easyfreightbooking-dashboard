@@ -117,6 +117,15 @@ export default function App() {
           <Route path="/view-bookings" element={<ProtectedRoute><ViewBookings /></ProtectedRoute>} />
           <Route path="/account" element={<ProtectedRoute><MyAccount /></ProtectedRoute>} />
           <Route
+            path="/admin/pricing"
+              element={
+              <ProtectedRoute>
+                <AdminPricing />
+              </ProtectedRoute>
+              }
+           />
+
+          <Route
             path="/admin/bookings"
             element={
               <ProtectedRoute>
@@ -805,6 +814,278 @@ function ResultCard({ transport, selectedOption, onSelect }) {
     </div>
   );
 }
+
+
+function AdminPricing() {
+  const [me, setMe] = React.useState(null);
+  const [cfgPublished, setCfgPublished] = React.useState(null);
+  const [cfgDraft, setCfgDraft] = React.useState(null);
+  const [working, setWorking] = React.useState(null); // redigerad config (draft om finns annars published)
+  const [selectedMode, setSelectedMode] = React.useState("");
+  const [tab, setTab] = React.useState("general");
+  const [msg, setMsg] = React.useState("");
+
+  React.useEffect(() => {
+    authedGet("/me").then((m) => {
+      if (m?.user?.role !== "superadmin") throw new Error("Forbidden");
+      setMe(m);
+      return authedGet("/admin/config");
+    }).then((d) => {
+      setCfgPublished(d.published?.data || {});
+      setCfgDraft(d.draft?.data || null);
+      const base = d.draft?.data || d.published?.data || {};
+      setWorking(JSON.parse(JSON.stringify(base)));
+      const firstMode = Object.keys(base || {})[0] || "";
+      setSelectedMode(firstMode);
+    }).catch((e) => setMsg(`❌ ${String(e.message || e)}`));
+  }, []);
+
+  const modes = Object.keys(working || {});
+
+  function setModeField(mode, path, value) {
+    setWorking((prev) => {
+      const next = { ...prev };
+      next[mode] = { ...next[mode] };
+      next[mode][path] = value;
+      return next;
+    });
+  }
+
+  function parseZones(text) {
+    // Format:
+    // SE: 20-89, 90
+    // DK: 00-99
+    const out = {};
+    text.split("\n").forEach((line) => {
+      const s = line.trim();
+      if (!s) return;
+      const [cc, ranges] = s.split(":");
+      if (!cc || !ranges) return;
+      out[cc.trim().toUpperCase()] = ranges.split(",").map(x => x.trim()).filter(Boolean);
+    });
+    return out;
+  }
+
+  function zonesToText(z) {
+    if (!z) return "";
+    return Object.entries(z).map(([cc, arr]) => `${cc}: ${arr.join(", ")}`).join("\n");
+  }
+
+  function parseBalance(text) {
+    // Format:
+    // SE-DE=1.0
+    // DE-SE=1.05
+    const out = {};
+    text.split("\n").forEach((line) => {
+      const s = line.trim();
+      if (!s) return;
+      const [k, v] = s.split("=");
+      if (!k || !v) return;
+      out[k.trim().toUpperCase()] = parseFloat(v);
+    });
+    return out;
+  }
+
+  function balanceToText(b) {
+    if (!b) return "";
+    return Object.entries(b).map(([k, v]) => `${k}=${v}`).join("\n");
+  }
+
+  async function saveDraft() {
+    setMsg("");
+    try {
+      const res = await fetch(`${API}/admin/config/draft`, {
+        method: "PUT",
+        headers: authHeaders(),
+        body: JSON.stringify(working),
+      });
+      const j = await res.json();
+      if (!res.ok || !j.ok) throw new Error(j.errors?.[0] || j.error || `HTTP ${res.status}`);
+      setMsg("✅ Draft saved");
+      setCfgDraft(working);
+    } catch (e) {
+      setMsg(`❌ ${String(e.message || e)}`);
+    }
+  }
+
+  async function validateDraft() {
+    setMsg("");
+    try {
+      const res = await fetch(`${API}/admin/config/validate`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ data: working }),
+      });
+      const j = await res.json();
+      if (!j.ok) {
+        setMsg(`⚠️ Validation errors:\n- ${j.errors.join("\n- ")}`);
+      } else {
+        setMsg("✅ Validation OK");
+      }
+    } catch (e) {
+      setMsg(`❌ ${String(e.message || e)}`);
+    }
+  }
+
+  async function publishNow() {
+    setMsg("");
+    try {
+      const res = await fetch(`${API}/admin/config/publish`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ comment: "Publish from admin UI" }),
+      });
+      const j = await res.json();
+      if (!res.ok || !j.ok) throw new Error(j.error || `HTTP ${res.status}`);
+      setMsg(`✅ Published version ${j.version}`);
+      setCfgPublished(working);
+      // draft tas bort i backend → hämta om
+    } catch (e) {
+      setMsg(`❌ ${String(e.message || e)}`);
+    }
+  }
+
+  if (!working) return <div>Loading…</div>;
+  if (!modes.length) return <div>No modes in config</div>;
+
+  const m = working[selectedMode] || {};
+
+  const field = (label, key, type="number", step="any") => (
+    <label className="block">
+      <span className="text-xs text-gray-500">{label}</span>
+      <input
+        type={type}
+        step={step}
+        value={m?.[key] ?? ""}
+        onChange={(e)=>setModeField(selectedMode, key, type==="number" ? Number(e.target.value) : e.target.value)}
+        className="mt-1 w-full border rounded p-2"
+      />
+    </label>
+  );
+
+  return (
+    <div className="flex gap-4">
+      {/* vänster lista */}
+      <aside className="w-72 bg-white border rounded-lg shadow-sm overflow-auto">
+        <div className="p-3 border-b font-semibold">Modes</div>
+        <ul>
+          {modes.map((k) => {
+            const label = working[k]?.label || k;
+            const changed = JSON.stringify(cfgPublished?.[k]) !== JSON.stringify(working?.[k]);
+            return (
+              <li key={k}>
+                <button
+                  className={`w-full text-left px-3 py-2 hover:bg-gray-50 ${selectedMode===k ? "bg-blue-50" : ""}`}
+                  onClick={()=>setSelectedMode(k)}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">{label}</span>
+                    {changed && <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-900">DRAFT*</span>}
+                  </div>
+                  <div className="text-xs text-gray-500">{k}</div>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </aside>
+
+      {/* höger formulär */}
+      <section className="flex-1 bg-white border rounded-lg shadow-sm p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-lg font-semibold">{m.label || selectedMode}</div>
+          <div className="flex gap-2">
+            <button onClick={saveDraft} className="px-3 py-1.5 rounded bg-gray-800 text-white">Save draft</button>
+            <button onClick={validateDraft} className="px-3 py-1.5 rounded bg-blue-600 text-white">Validate</button>
+            <button onClick={publishNow} className="px-3 py-1.5 rounded bg-green-600 text-white">Publish</button>
+          </div>
+        </div>
+
+        {/* tabs */}
+        <div className="flex gap-2 mb-4">
+          {["general","pricing","transit","zones","balance"].map(t => (
+            <button key={t}
+              className={`px-3 py-1.5 rounded border ${tab===t ? "bg-blue-50 border-blue-300" : "bg-gray-50 border-transparent"}`}
+              onClick={()=>setTab(t)}
+            >
+              {t[0].toUpperCase()+t.slice(1)}
+            </button>
+          ))}
+        </div>
+
+        {tab==="general" && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {field("Label","label","text")}
+            <label className="md:col-span-2 block">
+              <span className="text-xs text-gray-500">Description</span>
+              <textarea
+                value={m?.description ?? ""}
+                onChange={(e)=>setModeField(selectedMode,"description", e.target.value)}
+                className="mt-1 w-full border rounded p-2 h-24"
+              />
+            </label>
+          </div>
+        )}
+
+        {tab==="pricing" && (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {field("km_price_eur","km_price_eur")}
+            {field("co2_per_ton_km","co2_per_ton_km")}
+            {field("min_allowed_weight_kg","min_allowed_weight_kg")}
+            {field("max_allowed_weight_kg","max_allowed_weight_kg")}
+            {field("max_weight_kg","max_weight_kg")}
+            {field("default_breakpoint","default_breakpoint")}
+            <div className="md:col-span-3 border-t pt-2 text-xs text-gray-500">Curve params</div>
+            {field("p1","p1")}
+            {field("price_p1","price_p1")}
+            {field("p2","p2")}
+            {field("p2k","p2k")}
+            {field("p2m","p2m")}
+            {field("p3","p3")}
+            {field("p3k","p3k")}
+            {field("p3m","p3m")}
+          </div>
+        )}
+
+        {tab==="transit" && (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {field("transit_speed_kmpd","transit_speed_kmpd")}
+            {field("cutoff_hour","cutoff_hour")}
+            {field("extra_pickup_days","extra_pickup_days")}
+          </div>
+        )}
+
+        {tab==="zones" && (
+          <div>
+            <div className="text-xs text-gray-500 mb-1">One per line: CC: ranges… (ex: SE: 20-89, 90)</div>
+            <textarea
+              className="w-full border rounded p-2 h-48 font-mono text-sm"
+              defaultValue={zonesToText(m.available_zones)}
+              onBlur={(e)=>setModeField(selectedMode, "available_zones", parseZones(e.target.value))}
+            />
+            <div className="text-xs text-gray-500 mt-1">Saved on blur</div>
+          </div>
+        )}
+
+        {tab==="balance" && (
+          <div>
+            <div className="text-xs text-gray-500 mb-1">One per line: CC-CC=value (ex: SE-DE=1.0)</div>
+            <textarea
+              className="w-full border rounded p-2 h-48 font-mono text-sm"
+              defaultValue={balanceToText(m.balance_factors)}
+              onBlur={(e)=>setModeField(selectedMode, "balance_factors", parseBalance(e.target.value))}
+            />
+            <div className="text-xs text-gray-500 mt-1">Saved on blur</div>
+          </div>
+        )}
+
+        {msg && <pre className="mt-4 whitespace-pre-wrap text-sm">{msg}</pre>}
+      </section>
+    </div>
+  );
+}
+
+
 
 function NewBooking() {
   const [goods, setGoods] = React.useState([{ type: "Colli", weight: "", length: "", width: "", height: "", quantity: 1 }]);
