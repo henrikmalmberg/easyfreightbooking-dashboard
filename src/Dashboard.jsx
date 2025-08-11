@@ -142,12 +142,12 @@ export function Layout({ children }) {
     <div className="flex min-h-screen bg-gray-100">
       <div
         className={`fixed inset-0 bg-black bg-opacity-30 z-40 md:hidden ${showSidebar ? "block" : "hidden"}`}
-        onClick={() => setShowSidebar(false)}
+        onClick={() => setShowfalse)}
       />
-      <Sidebar visible={showSidebar} onClose={() => setShowSidebar(false)} />
+      <Sidebar visible={showSidebar} onClose={() => setShowfalse)} />
 
       <main className="flex-1 p-4 md:p-8 overflow-auto w-full">
-        <button className="md:hidden mb-4 text-blue-600" onClick={() => setShowSidebar(true)}>☰ Menu</button>
+        <button className="md:hidden mb-4 text-blue-600" onClick={() => setShowtrue)}>☰ Menu</button>
         {children}
       </main>
     </div>
@@ -195,13 +195,19 @@ function Sidebar({ visible, onClose }) {
               My account
             </Link>
 
-            {/* ✅ Endast för superadmin */}
             {me?.user?.role === "superadmin" && (
-              <Link to="/admin/bookings" className="block text-gray-700 hover:text-blue-600" onClick={onClose}>
-                Admin: All bookings
-              </Link>
+            <>
+            <Link to="/admin/bookings" className="block text-gray-700 hover:text-blue-600" onClick={onClose}>
+              Admin: All bookings
+            </Link>
+              <Link to="/admin/pricing" className="block text-gray-700 hover:text-blue-600" onClick={onClose}>
+              Admin: Pricing config
+            </Link>
+            </>
             )}
 
+
+            
             <hr className="my-4" />
             <button onClick={handleLogout} className="flex items-center text-sm text-gray-500 hover:text-red-500">
               Log out
