@@ -859,7 +859,7 @@ function BookingsSplitView({ adminMode = false }) {
   </div>
 </div>
 
-            </div>
+       
 
             {/* Goods */}
             {Array.isArray(selected.goods) && selected.goods.length > 0 && (
