@@ -315,6 +315,8 @@ function CreateAccountPage() {
     company_name: "",
     address: "",
     invoice_email: "",
+    postal_code: "",          // 👈 NEW
+    country_code: "SE",       // 👈 NEW
     name: "",
     email: "",
     password: "",
@@ -322,7 +324,6 @@ function CreateAccountPage() {
   const [msg, setMsg] = React.useState("");
 
   const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
-
   const normalizeVAT = (v) => (v || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
   const isVATFormat = (v) => /^[A-Z]{2}[A-Z0-9]{2,12}$/.test(v || "");
 
@@ -332,7 +333,7 @@ function CreateAccountPage() {
 
     const vat = normalizeVAT(form.vat_number);
     if (!isVATFormat(vat)) {
-      setMsg("❌ Please enter a valid VAT number (ex: SE5566778899).");
+      setMsg("❌ Please enter a valid VAT number (e.g. SE556677889901).");
       return;
     }
 
@@ -347,11 +348,11 @@ function CreateAccountPage() {
 
       if (!res.ok) {
         if (res.status === 409 && data?.admin) {
-          setMsg(`❌ Organization already exists. Contact admin: ${data.admin.name} <${data.admin.email}>`);
-        } else if (data?.field === "vat_number") {
-          setMsg(`❌ ${data.error}`);
+          setMsg(`❌ Organization already exists.\nPlease contact the admin: ${data.admin.name} <${data.admin.email}> to get an invite.`);
         } else if (data?.field === "email") {
           setMsg("❌ Email already in use.");
+        } else if (data?.field === "vat_number") {
+          setMsg(`❌ ${data.error}`);
         } else {
           setMsg(`❌ ${data?.error || `HTTP ${res.status}`}`);
         }
@@ -371,16 +372,25 @@ function CreateAccountPage() {
       {msg && <div className="mb-3 whitespace-pre-wrap">{msg}</div>}
 
       <form onSubmit={onSubmit} className="grid grid-cols-1 gap-3">
-        <input className="border rounded p-2" name="vat_number" placeholder="VAT number (e.g. SE556677889901)"
+        <input className="border rounded p-2" name="vat_number" placeholder="VAT number"
                value={form.vat_number} onChange={onChange} required />
         <input className="border rounded p-2" name="company_name" placeholder="Company name"
                value={form.company_name} onChange={onChange} required />
-        <input className="border rounded p-2" name="address" placeholder="Address"
+        <input className="border rounded p-2" name="address" placeholder="Address (street, city)"
                value={form.address} onChange={onChange} required />
+
+        <div className="grid grid-cols-2 gap-3">
+          <input className="border rounded p-2" name="postal_code" placeholder="Postal code"
+                 value={form.postal_code} onChange={onChange} />
+          <select className="border rounded p-2" name="country_code"
+                  value={form.country_code} onChange={onChange}>
+            {COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
+          </select>
+        </div>
+
         <input className="border rounded p-2" name="invoice_email" type="email" placeholder="Invoice email"
                value={form.invoice_email} onChange={onChange} required />
 
-        {/* Admin user */}
         <hr className="my-2" />
         <div className="font-semibold">Admin user</div>
         <input className="border rounded p-2" name="name" placeholder="Your name"
@@ -392,14 +402,10 @@ function CreateAccountPage() {
 
         <button className="bg-blue-600 text-white py-2 rounded hover:bg-blue-700">Create</button>
       </form>
-
-      <div className="text-sm mt-4">
-        Already have an account?{" "}
-        <Link to="/login" className="text-blue-600">Log in</Link>
-      </div>
     </div>
   );
 }
+
 
 
 /* =========================================================
@@ -995,17 +1001,18 @@ function MyAccount() {
     <div className="max-w-xl">
       <h1 className="text-3xl font-bold mb-4">My account</h1>
       {err && <div className="text-red-600 mb-2">{String(err)}</div>}
-      {me ? (
-        <div className="mb-8 bg-white rounded border p-4 space-y-1">
-          <div><strong>Organization:</strong> {me.organization.company_name}</div>
-          <div><strong>VAT:</strong> {me.organization.vat_number}</div>
-          <div><strong>Name:</strong> {me.user.name}</div>
-          <div><strong>Email:</strong> {me.user.email}</div>
-          <div><strong>Role:</strong> {me.user.role}</div>
-        </div>
-      ) : (
-        <div>Loading…</div>
-      )}
+{me && (
+  <div className="mb-8 bg-white rounded border p-4 space-y-1">
+    <div><strong>Organization:</strong> {me.organization.company_name}</div>
+    <div><strong>VAT:</strong> {me.organization.vat_number}</div>
+    <div><strong>Address:</strong> {me.organization.address}</div>
+    <div><strong>Postal code:</strong> {me.organization.postal_code || "—"}</div>
+    <div><strong>Country:</strong> {me.organization.country_code || "—"}</div>
+    <div><strong>Payment terms:</strong> {me.organization.payment_terms_days} days</div>
+    <div><strong>Currency:</strong> {me.organization.currency}</div>
+  </div>
+)}
+
 
       <h2 className="text-xl font-semibold mb-2">Invite a colleague</h2>
       <form onSubmit={sendInvite} className="bg-white rounded border p-4 space-y-3">
