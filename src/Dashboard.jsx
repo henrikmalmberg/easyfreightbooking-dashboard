@@ -51,7 +51,7 @@ const COUNTRIES = [
   { code: "UA", name: "Ukraine" }
 ];
 
-const ING_REGEX = /^[A-HJ-NP-TV-Z]{2}-[A-HJ-NP-TV-Z]{3}-\d{5}$/i;
+const BOOKING_REGEX = /^[A-HJ-NP-TV-Z]{2}-[A-HJ-NP-TV-Z]{3}-\d{5}$/i;
 
 async function getCoordinates(postal, country) {
   // NOTE: this key is used client-side per your existing setup
