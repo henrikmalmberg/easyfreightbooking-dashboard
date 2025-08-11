@@ -315,8 +315,6 @@ function CreateAccountPage() {
     company_name: "",
     address: "",
     invoice_email: "",
-    payment_terms_days: 15,
-    currency: "EUR",
     name: "",
     email: "",
     password: "",
@@ -325,17 +323,41 @@ function CreateAccountPage() {
 
   const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
+  const normalizeVAT = (v) => (v || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+  const isVATFormat = (v) => /^[A-Z]{2}[A-Z0-9]{2,12}$/.test(v || "");
+
   async function onSubmit(e) {
     e.preventDefault();
     setMsg("");
+
+    const vat = normalizeVAT(form.vat_number);
+    if (!isVATFormat(vat)) {
+      setMsg("❌ Please enter a valid VAT number (ex: SE5566778899).");
+      return;
+    }
+
     try {
+      const payload = { ...form, vat_number: vat };
       const res = await fetch(`${API}/register-organization`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+
+      if (!res.ok) {
+        if (res.status === 409 && data?.admin) {
+          setMsg(`❌ Organization already exists. Contact admin: ${data.admin.name} <${data.admin.email}>`);
+        } else if (data?.field === "vat_number") {
+          setMsg(`❌ ${data.error}`);
+        } else if (data?.field === "email") {
+          setMsg("❌ Email already in use.");
+        } else {
+          setMsg(`❌ ${data?.error || `HTTP ${res.status}`}`);
+        }
+        return;
+      }
+
       setMsg("✅ Organization created. You can now log in.");
       setTimeout(() => nav("/login"), 900);
     } catch (e) {
@@ -346,25 +368,27 @@ function CreateAccountPage() {
   return (
     <div className="max-w-xl mx-auto bg-white border rounded p-6">
       <h1 className="text-2xl font-bold mb-4">Create organization</h1>
-      {msg && <div className="mb-3">{msg}</div>}
+      {msg && <div className="mb-3 whitespace-pre-wrap">{msg}</div>}
 
       <form onSubmit={onSubmit} className="grid grid-cols-1 gap-3">
-        <input className="border rounded p-2" name="vat_number" placeholder="VAT number" value={form.vat_number} onChange={onChange} required />
-        <input className="border rounded p-2" name="company_name" placeholder="Company name" value={form.company_name} onChange={onChange} required />
-        <input className="border rounded p-2" name="address" placeholder="Address" value={form.address} onChange={onChange} required />
-        <input className="border rounded p-2" name="invoice_email" type="email" placeholder="Invoice email" value={form.invoice_email} onChange={onChange} required />
+        <input className="border rounded p-2" name="vat_number" placeholder="VAT number (e.g. SE556677889901)"
+               value={form.vat_number} onChange={onChange} required />
+        <input className="border rounded p-2" name="company_name" placeholder="Company name"
+               value={form.company_name} onChange={onChange} required />
+        <input className="border rounded p-2" name="address" placeholder="Address"
+               value={form.address} onChange={onChange} required />
+        <input className="border rounded p-2" name="invoice_email" type="email" placeholder="Invoice email"
+               value={form.invoice_email} onChange={onChange} required />
 
-        <div className="grid grid-cols-2 gap-3">
-          <input className="border rounded p-2" name="payment_terms_days" type="number" min="0"
-                 placeholder="Payment terms (days)" value={form.payment_terms_days} onChange={onChange} />
-          <input className="border rounded p-2" name="currency" placeholder="Currency" value={form.currency} onChange={onChange} />
-        </div>
-
+        {/* Admin user */}
         <hr className="my-2" />
         <div className="font-semibold">Admin user</div>
-        <input className="border rounded p-2" name="name" placeholder="Your name" value={form.name} onChange={onChange} required />
-        <input className="border rounded p-2" name="email" type="email" placeholder="Your email" value={form.email} onChange={onChange} required />
-        <input className="border rounded p-2" name="password" type="password" placeholder="Password" value={form.password} onChange={onChange} required />
+        <input className="border rounded p-2" name="name" placeholder="Your name"
+               value={form.name} onChange={onChange} required />
+        <input className="border rounded p-2" name="email" type="email" placeholder="Your email"
+               value={form.email} onChange={onChange} required />
+        <input className="border rounded p-2" name="password" type="password" placeholder="Password"
+               value={form.password} onChange={onChange} required />
 
         <button className="bg-blue-600 text-white py-2 rounded hover:bg-blue-700">Create</button>
       </form>
@@ -376,6 +400,7 @@ function CreateAccountPage() {
     </div>
   );
 }
+
 
 /* =========================================================
    Protected: Welcome
