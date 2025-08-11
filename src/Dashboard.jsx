@@ -429,7 +429,7 @@ function BookingsSplitView({ adminMode = false }) {
   const [err, setErr] = React.useState(null);
   const [selected, setSelected] = React.useState(null);
 
-  // Kolumnfilter (endast de synliga kolumnerna)
+  // Filter för synliga kolumner
   const [filters, setFilters] = React.useState({
     booking_number: "",
     load_place: "",
@@ -447,15 +447,22 @@ function BookingsSplitView({ adminMode = false }) {
           const me = await authedGet("/me");
           if (me?.user?.role !== "superadmin") throw new Error("Forbidden");
         }
-        const r = await fetch(`${API}/bookings`, { headers: { Authorization: `Bearer ${getToken()}` } });
+        const r = await fetch(`${API}/bookings`, {
+          headers: { Authorization: `Bearer ${getToken()}` },
+        });
         const j = await r.json();
         if (!r.ok) throw new Error(j?.error || `HTTP ${r.status}`);
-        if (alive) { setAll(j); setSelected(j?.[0] || null); }
+        if (alive) {
+          setAll(j);
+          setSelected(j?.[0] || null);
+        }
       } catch (e) {
         if (alive) setErr(String(e.message || e));
       }
     })();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, [adminMode]);
 
   const statusColors = {
@@ -472,15 +479,20 @@ function BookingsSplitView({ adminMode = false }) {
     EXCEPTION: "bg-rose-100 text-rose-800",
   };
 
-  const sum = (arr, get) => (Array.isArray(arr) ? arr.reduce((t, x) => t + (Number(get(x)) || 0), 0) : 0);
+  const sum = (arr, get) =>
+    Array.isArray(arr) ? arr.reduce((t, x) => t + (Number(get(x)) || 0), 0) : 0;
 
   const rows = React.useMemo(() => {
     if (!Array.isArray(all)) return [];
     return all.map((b) => {
       const from = b.sender_address;
       const to = b.receiver_address;
-      const loadPlace = from ? `${from.country_code || ""}-${from.postal_code || ""} ${from.city || ""}`.trim() : "";
-      const unloadPlace = to ? `${to.country_code || ""}-${to.postal_code || ""} ${to.city || ""}`.trim() : "";
+      const loadPlace = from
+        ? `${from.country_code || ""}-${from.postal_code || ""} ${from.city || ""}`.trim()
+        : "";
+      const unloadPlace = to
+        ? `${to.country_code || ""}-${to.postal_code || ""} ${to.city || ""}`.trim()
+        : "";
       const weight = sum(b.goods || [], (g) => g.weight);
       return {
         raw: b,
@@ -489,13 +501,14 @@ function BookingsSplitView({ adminMode = false }) {
         unload_place: unloadPlace,
         weight,
         status: b.status || "NEW",
-        customer: adminMode ? (b.organization?.company_name || "") : "",   // 👈 NEW
+        customer: adminMode ? (b.organization?.company_name || "") : "", // 👈 NEW
       };
     });
-  }, [all]);
+  }, [all, adminMode]);
 
   const filtered = React.useMemo(() => {
-    const like = (v, q) => String(v ?? "").toLowerCase().includes(String(q ?? "").toLowerCase());
+    const like = (v, q) =>
+      String(v ?? "").toLowerCase().includes(String(q ?? "").toLowerCase());
     return rows.filter((r) => {
       if (filters.booking_number && !like(r.booking_number, filters.booking_number)) return false;
       if (filters.load_place && !like(r.load_place, filters.load_place)) return false;
@@ -503,103 +516,192 @@ function BookingsSplitView({ adminMode = false }) {
       if (filters.weight && !like(r.weight, filters.weight)) return false;
       if (filters.status && r.status !== filters.status) return false;
       if (adminMode && filters.customer && !like(r.customer, filters.customer)) return false;
-
       return true;
     });
-  }, [rows, filters]);
+  }, [rows, filters, adminMode]);
 
-  const copy = async (t) => { try { await navigator.clipboard.writeText(t); } catch {} };
+  const copy = async (t) => {
+    try {
+      await navigator.clipboard.writeText(t);
+    } catch {}
+  };
 
-  if (adminMode && err === "Forbidden") return <div className="text-red-600">403 – Admin only</div>;
+  if (adminMode && err === "Forbidden")
+    return <div className="text-red-600">403 – Admin only</div>;
+
+  const emptyColSpan = adminMode ? 6 : 5;
 
   return (
     <div className="flex gap-4 h-[calc(100vh-140px)]">
-      {/* Vänster: lista (50%) */}
+      {/* Vänster: lista */}
       <section className="w-1/2 bg-white border rounded-lg shadow-sm flex flex-col overflow-hidden">
         <div className="overflow-auto">
           <table className="min-w-full text-sm">
             <thead className="sticky top-0 bg-gray-50 z-10">
               <tr className="text-left">
                 <th className="px-3 py-2 w-44">Booking #</th>
-                {adminMode && <th className="px-3 py-2 w-56">Customer</th>}{/* 👈 NEW */}
+                {adminMode && <th className="px-3 py-2 w-56">Customer</th>}
                 <th className="px-3 py-2">Load Place</th>
                 <th className="px-3 py-2">Unload Place</th>
                 <th className="px-3 py-2 w-24">Weight</th>
                 <th className="px-3 py-2 w-28">Status</th>
               </tr>
-              {/* Filterrad */}
-<tr className="text-left bg-white border-b">
-  <th className="px-3 py-1">
-    <input className="w-full border rounded p-1" placeholder="Contains…" value={filters.booking_number}
-           onChange={(e)=>setFilters({...filters, booking_number:e.target.value})}/>
-  </th>
-  {adminMode && (
-    <th className="px-3 py-1">
-      <input className="w-full border rounded p-1" placeholder="Contains…" value={filters.customer}
-             onChange={(e)=>setFilters({...filters, customer:e.target.value})}/>
-    </th>
-  )}
-  <th className="px-3 py-1">
-    <input className="w-full border rounded p-1" placeholder="Contains…" value={filters.load_place}
-           onChange={(e)=>setFilters({...filters, load_place:e.target.value})}/>
-  </th>
-  <th className="px-3 py-1">
-    <input className="w-full border rounded p-1" placeholder="Contains…" value={filters.unload_place}
-           onChange={(e)=>setFilters({...filters, unload_place:e.target.value})}/>
-  </th>
-  <th className="px-3 py-1">
-    <input className="w-full border rounded p-1" placeholder="Equals…" value={filters.weight}
-           onChange={(e)=>setFilters({...filters, weight:e.target.value})}/>
-  </th>
-  <th className="px-3 py-1">
-    <select className="w-full border rounded p-1" value={filters.status}
-            onChange={(e)=>setFilters({...filters, status:e.target.value})}>
-      <option value="">All</option>
-      {["NEW","CONFIRMED","PICKUP_PLANNED","PICKED_UP","IN_TRANSIT","DELIVERY_PLANNED","DELIVERED","COMPLETED","ON_HOLD","CANCELLED","EXCEPTION"]
-        .map(s => <option key={s} value={s}>{s}</option>)}
-    </select>
-  </th>
-</tr>
 
+              {/* Filterrad */}
+              <tr className="text-left bg-white border-b">
+                <th className="px-3 py-1">
+                  <input
+                    className="w-full border rounded p-1"
+                    placeholder="Contains…"
+                    value={filters.booking_number}
+                    onChange={(e) =>
+                      setFilters({ ...filters, booking_number: e.target.value })
+                    }
+                  />
+                </th>
+                {adminMode && (
+                  <th className="px-3 py-1">
+                    <input
+                      className="w-full border rounded p-1"
+                      placeholder="Contains…"
+                      value={filters.customer}
+                      onChange={(e) =>
+                        setFilters({ ...filters, customer: e.target.value })
+                      }
+                    />
+                  </th>
+                )}
+                <th className="px-3 py-1">
+                  <input
+                    className="w-full border rounded p-1"
+                    placeholder="Contains…"
+                    value={filters.load_place}
+                    onChange={(e) =>
+                      setFilters({ ...filters, load_place: e.target.value })
+                    }
+                  />
+                </th>
+                <th className="px-3 py-1">
+                  <input
+                    className="w-full border rounded p-1"
+                    placeholder="Contains…"
+                    value={filters.unload_place}
+                    onChange={(e) =>
+                      setFilters({ ...filters, unload_place: e.target.value })
+                    }
+                  />
+                </th>
+                <th className="px-3 py-1">
+                  <input
+                    className="w-full border rounded p-1"
+                    placeholder="Equals…"
+                    value={filters.weight}
+                    onChange={(e) =>
+                      setFilters({ ...filters, weight: e.target.value })
+                    }
+                  />
+                </th>
+                <th className="px-3 py-1">
+                  <select
+                    className="w-full border rounded p-1"
+                    value={filters.status}
+                    onChange={(e) =>
+                      setFilters({ ...filters, status: e.target.value })
+                    }
+                  >
+                    <option value="">All</option>
+                    {[
+                      "NEW",
+                      "CONFIRMED",
+                      "PICKUP_PLANNED",
+                      "PICKED_UP",
+                      "IN_TRANSIT",
+                      "DELIVERY_PLANNED",
+                      "DELIVERED",
+                      "COMPLETED",
+                      "ON_HOLD",
+                      "CANCELLED",
+                      "EXCEPTION",
+                    ].map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </th>
+              </tr>
             </thead>
+
             <tbody>
               {filtered.map((r) => {
                 const isSel = selected?.id === r.raw.id;
                 return (
                   <tr
                     key={r.raw.id}
-                    className={`cursor-pointer h-10 ${isSel ? "bg-blue-50" : "hover:bg-gray-50"}`}
-                    onClick={()=>setSelected(r.raw)}
+                    className={`cursor-pointer h-10 ${
+                      isSel ? "bg-blue-50" : "hover:bg-gray-50"
+                    }`}
+                    onClick={() => setSelected(r.raw)}
                   >
                     <td className="px-3 py-2 whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         <BookingNumberBadge value={r.booking_number} />
-                        <button className="text-gray-400 hover:text-gray-700" onClick={(e)=>{e.stopPropagation(); copy(r.booking_number);}}>⧉</button>
+                        <button
+                          className="text-gray-400 hover:text-gray-700"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            copy(r.booking_number);
+                          }}
+                        >
+                          ⧉
+                        </button>
                       </div>
                     </td>
-                            {adminMode && (
-          <td className="px-3 py-2 whitespace-nowrap truncate max-w-[220px]">
-            {r.customer}
-          </td>
-        )
-                    <td className="px-3 py-2 whitespace-nowrap truncate max-w-[220px]">{r.load_place}</td>
-                    <td className="px-3 py-2 whitespace-nowrap truncate max-w-[220px]">{r.unload_place}</td>
-                    <td className="px-3 py-2 text-right whitespace-nowrap">{r.weight ? Math.round(r.weight) : ""}</td>
+
+                    {adminMode && (
+                      <td className="px-3 py-2 whitespace-nowrap truncate max-w-[220px]">
+                        {r.customer}
+                      </td>
+                    )}
+
+                    <td className="px-3 py-2 whitespace-nowrap truncate max-w-[220px]">
+                      {r.load_place}
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap truncate max-w-[220px]">
+                      {r.unload_place}
+                    </td>
+                    <td className="px-3 py-2 text-right whitespace-nowrap">
+                      {r.weight ? Math.round(r.weight) : ""}
+                    </td>
                     <td className="px-3 py-2 whitespace-nowrap">
-                      <span className={`text-xs px-2 py-0.5 rounded ${statusColors[r.status] || "bg-gray-100"}`}>{r.status}</span>
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded ${
+                          statusColors[r.status] || "bg-gray-100"
+                        }`}
+                      >
+                        {r.status}
+                      </span>
                     </td>
                   </tr>
                 );
               })}
+
               {filtered.length === 0 && (
-                <tr><td colSpan={5} className="px-3 py-6 text-center text-gray-500">No bookings</td></tr>
+                <tr>
+                  <td
+                    colSpan={emptyColSpan}
+                    className="px-3 py-6 text-center text-gray-500"
+                  >
+                    No bookings
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>
         </div>
       </section>
 
-      {/* Höger: detaljer (50%) */}
+      {/* Höger: detaljer */}
       <section className="w-1/2 overflow-auto">
         {!selected ? (
           <div className="text-gray-500">Select a booking from the list.</div>
@@ -607,42 +709,113 @@ function BookingsSplitView({ adminMode = false }) {
           <div className="bg-white border rounded-lg shadow-sm p-4 md:p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <span className="text-lg font-semibold">{selected.booking_number}</span>
-                <span className={`text-xs px-2 py-0.5 rounded ${
-                  statusColors[selected.status] || "bg-gray-100"
-                }`}>{selected.status || "NEW"}</span>
+                <span className="text-lg font-semibold">
+                  {selected.booking_number}
+                </span>
+                <span
+                  className={`text-xs px-2 py-0.5 rounded ${
+                    statusColors[selected.status] || "bg-gray-100"
+                  }`}
+                >
+                  {selected.status || "NEW"}
+                </span>
               </div>
               <div className="text-right text-sm text-gray-600">
-                <div>Booked: {selected.booking_date || (selected.created_at ? new Date(selected.created_at).toLocaleDateString() : "—")}</div>
+                <div>
+                  Booked:{" "}
+                  {selected.booking_date ||
+                    (selected.created_at
+                      ? new Date(selected.created_at).toLocaleDateString()
+                      : "—")}
+                </div>
                 {typeof selected.price_eur === "number" && (
-                  <div className="font-medium">{Math.round(selected.price_eur)} EUR</div>
+                  <div className="font-medium">
+                    {Math.round(selected.price_eur)} EUR
+                  </div>
                 )}
               </div>
             </div>
 
+            {/* Customer + user */}
+            {(selected.organization || selected.booked_by) && (
+              <div className="mb-3 text-sm text-gray-600">
+                {selected.organization && (
+                  <div>
+                    <span className="text-gray-500">Customer:</span>{" "}
+                    {selected.organization.company_name}
+                  </div>
+                )}
+                {selected.booked_by && (
+                  <div>
+                    <span className="text-gray-500">Booked by:</span>{" "}
+                    {selected.booked_by.name}
+                    {selected.booked_by.email
+                      ? ` <${selected.booked_by.email}>`
+                      : ""}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Route */}
             <div className="mb-4">
               <div className="text-gray-700 font-medium">
-                {selected?.sender_address?.country_code} {selected?.sender_address?.postal_code} {selected?.sender_address?.city}
+                {selected?.sender_address?.country_code}{" "}
+                {selected?.sender_address?.postal_code}{" "}
+                {selected?.sender_address?.city}
                 {"  →  "}
-                {selected?.receiver_address?.country_code} {selected?.receiver_address?.postal_code} {selected?.receiver_address?.city}
+                {selected?.receiver_address?.country_code}{" "}
+                {selected?.receiver_address?.postal_code}{" "}
+                {selected?.receiver_address?.city}
               </div>
-              <div className="text-xs text-gray-500">Mode: {selected.selected_mode?.replaceAll("_"," ") || "—"}</div>
+              <div className="text-xs text-gray-500">
+                Mode: {selected.selected_mode?.replaceAll("_", " ") || "—"}
+              </div>
             </div>
 
             {/* Dates */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="border rounded p-3">
                 <div className="font-semibold mb-2">Pickup</div>
-                <DetailRow label="Requested" value={`${selected.loading_requested_date || ""} ${selected.loading_requested_time || ""}`.trim()} />
-                <DetailRow label="Planned" value={`${selected.loading_planned_date || ""} ${selected.loading_planned_time || ""}`.trim()} />
-                <DetailRow label="Actual" value={`${selected.loading_actual_date || ""} ${selected.loading_actual_time || ""}`.trim()} />
+                <DetailRow
+                  label="Requested"
+                  value={`${selected.loading_requested_date || ""} ${
+                    selected.loading_requested_time || ""
+                  }`.trim()}
+                />
+                <DetailRow
+                  label="Planned"
+                  value={`${selected.loading_planned_date || ""} ${
+                    selected.loading_planned_time || ""
+                  }`.trim()}
+                />
+                <DetailRow
+                  label="Actual"
+                  value={`${selected.loading_actual_date || ""} ${
+                    selected.loading_actual_time || ""
+                  }`.trim()}
+                />
               </div>
               <div className="border rounded p-3">
                 <div className="font-semibold mb-2">Delivery</div>
-                <DetailRow label="Requested" value={`${selected.unloading_requested_date || ""} ${selected.unloading_requested_time || ""}`.trim()} />
-                <DetailRow label="Planned" value={`${selected.unloading_planned_date || ""} ${selected.unloading_planned_time || ""}`.trim()} />
-                <DetailRow label="Actual" value={`${selected.unloading_actual_date || ""} ${selected.unloading_actual_time || ""}`.trim()} />
+                <DetailRow
+                  label="Requested"
+                  value={`${selected.unloading_requested_date || ""} ${
+                    selected.unloading_requested_time || ""
+                  }`.trim()}
+                />
+                <DetailRow
+                  label="Planned"
+                  value={`${selected.unloading_planned_date || ""} ${
+                    selected.unloading_planned_time || ""
+                  }`.trim()}
+                />
+                <DetailRow
+                  label="Actual"
+                  value={`${selected.unloading_actual_date || ""} ${
+                    selected.unloading_actual_time || ""
+                  }`.trim()}
+                />
               </div>
             </div>
 
@@ -667,8 +840,12 @@ function BookingsSplitView({ adminMode = false }) {
                           <td className="px-3 py-2">{g.type}</td>
                           <td className="px-3 py-2 text-right">{g.quantity}</td>
                           <td className="px-3 py-2 text-right">{g.weight}</td>
-                          <td className="px-3 py-2 text-right">{g.length}×{g.width}×{g.height}</td>
-                          <td className="px-3 py-2 text-right">{g.ldm ?? ""}</td>
+                          <td className="px-3 py-2 text-right">
+                            {g.length}×{g.width}×{g.height}
+                          </td>
+                          <td className="px-3 py-2 text-right">
+                            {g.ldm ?? ""}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -679,14 +856,24 @@ function BookingsSplitView({ adminMode = false }) {
 
             {/* References */}
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <DetailCard title="Reference 1" value={selected?.references?.reference1} />
-              <DetailCard title="Reference 2" value={selected?.references?.reference2} />
+              <DetailCard
+                title="Reference 1"
+                value={selected?.references?.reference1}
+              />
+              <DetailCard
+                title="Reference 2"
+                value={selected?.references?.reference2}
+              />
             </div>
 
             {/* CO2 & Transit */}
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
-              {selected.co2_emissions && <div>🌍 CO₂: {Number(selected.co2_emissions).toFixed(1)} kg</div>}
-              {selected.transit_time_days && <div>Transit time: {selected.transit_time_days}</div>}
+              {selected.co2_emissions && (
+                <div>🌍 CO₂: {Number(selected.co2_emissions).toFixed(1)} kg</div>
+              )}
+              {selected.transit_time_days && (
+                <div>Transit time: {selected.transit_time_days}</div>
+              )}
             </div>
           </div>
         )}
@@ -694,6 +881,7 @@ function BookingsSplitView({ adminMode = false }) {
     </div>
   );
 }
+
 
 /* Wrappers för sidorna */
 function ViewBookings() {
