@@ -10,7 +10,6 @@ import {
 import BookingForm from "./BookingForm";
 import AllUsers from "./AllUsers";
 
-
 /* =========================================================
    API + Auth helpers
 ========================================================= */
@@ -56,7 +55,6 @@ const COUNTRIES = [
 const BOOKING_REGEX = /^[A-HJ-NP-TV-Z]{2}-[A-HJ-NP-TV-Z]{3}-\d{5}$/i;
 
 async function getCoordinates(postal, country) {
-  // NOTE: this key is used client-side per your existing setup
   const apiKey = "AIzaSyBwOgpWgeY6e4SPNiB1nc_jKKqlN_Yn6YI";
   const response = await fetch(
     `https://maps.googleapis.com/maps/api/geocode/json?address=${postal}&components=country:${country}&key=${apiKey}`
@@ -111,31 +109,30 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/create-account" element={<CreateAccountPage />} />
 
-{/* Protected routes */}
-<Route path="/" element={<ProtectedRoute><Welcome /></ProtectedRoute>} />
-<Route path="/dashboard" element={<ProtectedRoute><Welcome /></ProtectedRoute>} />
-<Route path="/new-booking" element={<ProtectedRoute><NewBooking /></ProtectedRoute>} />
-<Route path="/confirm" element={<ProtectedRoute><BookingForm /></ProtectedRoute>} />
-<Route path="/view-bookings" element={<ProtectedRoute><ViewBookings /></ProtectedRoute>} />
-<Route path="/account" element={<ProtectedRoute><MyAccount /></ProtectedRoute>} />
-  <Route path="/all-users" element={<AllUsers />} />
-<Route
-  path="/admin/pricing"
-  element={
-    <ProtectedRoute>
-      <AdminPricing />
-    </ProtectedRoute>
-  }
-/>
-<Route
-  path="/admin/bookings"
-  element={
-    <ProtectedRoute>
-      <AdminAllBookings />
-    </ProtectedRoute>
-  }
-/>
-
+          {/* Protected routes */}
+          <Route path="/" element={<ProtectedRoute><Welcome /></ProtectedRoute>} />
+          <Route path="/dashboard" element={<ProtectedRoute><Welcome /></ProtectedRoute>} />
+          <Route path="/new-booking" element={<ProtectedRoute><NewBooking /></ProtectedRoute>} />
+          <Route path="/confirm" element={<ProtectedRoute><BookingForm /></ProtectedRoute>} />
+          <Route path="/view-bookings" element={<ProtectedRoute><ViewBookings /></ProtectedRoute>} />
+          <Route path="/account" element={<ProtectedRoute><MyAccount /></ProtectedRoute>} />
+          <Route path="/all-users" element={<ProtectedRoute><AllUsers /></ProtectedRoute>} />
+          <Route
+            path="/admin/pricing"
+            element={
+              <ProtectedRoute>
+                <AdminPricing />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/bookings"
+            element={
+              <ProtectedRoute>
+                <AdminAllBookings />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to={getToken() ? "/dashboard" : "/login"} replace />} />
@@ -171,7 +168,6 @@ export function Layout({ children }) {
   );
 }
 
-
 function Sidebar({ visible, onClose }) {
   const nav = useNavigate();
   const authed = !!getToken();
@@ -190,6 +186,8 @@ function Sidebar({ visible, onClose }) {
     clearToken();
     nav("/login");
   };
+
+  const isSuperadmin = me?.user?.role === "superadmin";
 
   return (
     <aside className={`fixed md:relative z-50 md:z-auto transform top-0 left-0 h-full w-64 bg-white border-r p-6 shadow-md transition-transform duration-300 ${visible ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}>
@@ -213,24 +211,20 @@ function Sidebar({ visible, onClose }) {
               My account
             </Link>
 
-            {me?.user?.role === "superadmin" && (
-            <>
-            <Link to="/admin/bookings" className="block text-gray-700 hover:text-blue-600" onClick={onClose}>
-              Admin: All bookings
-            </Link>
-              <Link to="/admin/pricing" className="block text-gray-700 hover:text-blue-600" onClick={onClose}>
-              Admin: Pricing config
-            </Link>
-            </>
+            {isSuperadmin && (
+              <>
+                <Link to="/admin/bookings" className="block text-gray-700 hover:text-blue-600" onClick={onClose}>
+                  Admin: All bookings
+                </Link>
+                <Link to="/admin/pricing" className="block text-gray-700 hover:text-blue-600" onClick={onClose}>
+                  Admin: Pricing config
+                </Link>
+                <Link to="/all-users" className="block text-gray-700 hover:text-blue-600" onClick={onClose}>
+                  Admin: All users
+                </Link>
+              </>
             )}
 
-{me?.role === "superadmin" && (
-  <Link to="/all-users" className="block px-3 py-2 rounded-xl hover:bg-gray-50 font-medium">
-    All Users
-  </Link>
-)}
-
-            
             <hr className="my-4" />
             <button onClick={handleLogout} className="flex items-center text-sm text-gray-500 hover:text-red-500">
               Log out
@@ -323,8 +317,8 @@ function CreateAccountPage() {
     company_name: "",
     address: "",
     invoice_email: "",
-    postal_code: "",          // 👈 NEW
-    country_code: "SE",       // 👈 NEW
+    postal_code: "",
+    country_code: "SE",
     name: "",
     email: "",
     password: "",
@@ -414,8 +408,6 @@ function CreateAccountPage() {
   );
 }
 
-
-
 /* =========================================================
    Protected: Welcome
 ========================================================= */
@@ -504,14 +496,13 @@ function BookingsSplitView({ adminMode = false }) {
   const [err, setErr] = React.useState(null);
   const [selected, setSelected] = React.useState(null);
 
-  // Filter för synliga kolumner
   const [filters, setFilters] = React.useState({
     booking_number: "",
     load_place: "",
     unload_place: "",
     weight: "",
     status: "",
-    customer: "", // 👈 NEW
+    customer: "",
   });
 
   React.useEffect(() => {
@@ -540,21 +531,21 @@ function BookingsSplitView({ adminMode = false }) {
     };
   }, [adminMode]);
 
-            const computeChargeableFromGoods = (goods = []) =>
-            goods.reduce((tot, g) => {
-            const w  = Number(g.weight) || 0;
-            const l  = (Number(g.length) || 0) / 100;
-            const wi = (Number(g.width)  || 0) / 100;
-            const h  = (Number(g.height) || 0) / 100;
-            const q  = Number(g.quantity) || 0;
-            const vol = l * wi * h * 335;
-             return tot + Math.max(w, vol) * q;
-              }, 0);
-  // fortfarande i BookingsSplitView, innan return-blocket
-const chargeable =
-  typeof selected?.chargeable_weight === "number"
-    ? selected.chargeable_weight
-    : computeChargeableFromGoods(selected?.goods);
+  const computeChargeableFromGoods = (goods = []) =>
+    goods.reduce((tot, g) => {
+      const w  = Number(g.weight) || 0;
+      const l  = (Number(g.length) || 0) / 100;
+      const wi = (Number(g.width)  || 0) / 100;
+      const h  = (Number(g.height) || 0) / 100;
+      const q  = Number(g.quantity) || 0;
+      const vol = l * wi * h * 335;
+      return tot + Math.max(w, vol) * q;
+    }, 0);
+
+  const chargeable =
+    typeof selected?.chargeable_weight === "number"
+      ? selected.chargeable_weight
+      : computeChargeableFromGoods(selected?.goods);
 
   const statusColors = {
     NEW: "bg-gray-200 text-gray-800",
@@ -584,8 +575,6 @@ const chargeable =
       const unloadPlace = to
         ? `${to.country_code || ""}-${to.postal_code || ""} ${to.city || ""}`.trim()
         : "";
-      //const weight = sum(b.goods || [], (g) => g.weight);
-      // eller lite säkrare:
       const weight = sum(Array.isArray(b.goods) ? b.goods : [], (g) => g.weight);
 
       return {
@@ -595,7 +584,7 @@ const chargeable =
         unload_place: unloadPlace,
         weight,
         status: b.status || "NEW",
-        customer: adminMode ? (b.organization?.company_name || "") : "", // 👈 NEW
+        customer: adminMode ? (b.organization?.company_name || "") : "",
       };
     });
   }, [all, adminMode]);
@@ -705,21 +694,10 @@ const chargeable =
                   >
                     <option value="">All</option>
                     {[
-                      "NEW",
-                      "CONFIRMED",
-                      "PICKUP_PLANNED",
-                      "PICKED_UP",
-                      "IN_TRANSIT",
-                      "DELIVERY_PLANNED",
-                      "DELIVERED",
-                      "COMPLETED",
-                      "ON_HOLD",
-                      "CANCELLED",
-                      "EXCEPTION",
+                      "NEW","CONFIRMED","PICKUP_PLANNED","PICKED_UP","IN_TRANSIT",
+                      "DELIVERY_PLANNED","DELIVERED","COMPLETED","ON_HOLD","CANCELLED","EXCEPTION",
                     ].map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
+                      <option key={s} value={s}>{s}</option>
                     ))}
                   </select>
                 </th>
@@ -732,9 +710,7 @@ const chargeable =
                 return (
                   <tr
                     key={r.raw.id}
-                    className={`cursor-pointer h-10 ${
-                      isSel ? "bg-blue-50" : "hover:bg-gray-50"
-                    }`}
+                    className={`cursor-pointer h-10 ${isSel ? "bg-blue-50" : "hover:bg-gray-50"}`}
                     onClick={() => setSelected(r.raw)}
                   >
                     <td className="px-3 py-2 whitespace-nowrap">
@@ -768,11 +744,7 @@ const chargeable =
                       {r.weight ? Math.round(r.weight) : ""}
                     </td>
                     <td className="px-3 py-2 whitespace-nowrap">
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded ${
-                          statusColors[r.status] || "bg-gray-100"
-                        }`}
-                      >
+                      <span className={`text-xs px-2 py-0.5 rounded ${statusColors[r.status] || "bg-gray-100"}`}>
                         {r.status}
                       </span>
                     </td>
@@ -782,10 +754,7 @@ const chargeable =
 
               {filtered.length === 0 && (
                 <tr>
-                  <td
-                    colSpan={emptyColSpan}
-                    className="px-3 py-6 text-center text-gray-500"
-                  >
+                  <td colSpan={adminMode ? 6 : 5} className="px-3 py-6 text-center text-gray-500">
                     No bookings
                   </td>
                 </tr>
@@ -803,14 +772,8 @@ const chargeable =
           <div className="bg-white border rounded-lg shadow-sm p-4 md:p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <span className="text-lg font-semibold">
-                  {selected.booking_number}
-                </span>
-                <span
-                  className={`text-xs px-2 py-0.5 rounded ${
-                    statusColors[selected.status] || "bg-gray-100"
-                  }`}
-                >
+                <span className="text-lg font-semibold">{selected.booking_number}</span>
+                <span className={`text-xs px-2 py-0.5 rounded ${statusColors[selected.status] || "bg-gray-100"}`}>
                   {selected.status || "NEW"}
                 </span>
               </div>
@@ -818,30 +781,24 @@ const chargeable =
                 <div>
                   Booked:{" "}
                   {selected.booking_date ||
-                    (selected.created_at
-                      ? new Date(selected.created_at).toLocaleDateString()
-                      : "—")}
+                    (selected.created_at ? new Date(selected.created_at).toLocaleDateString() : "—")}
                 </div>
                 {typeof selected.price_eur === "number" && (
-                  <div className="font-medium">
-                    {Math.round(selected.price_eur)} EUR
-                  </div>
+                  <div className="font-medium">{Math.round(selected.price_eur)} EUR</div>
                 )}
               </div>
             </div>
- 
-{/* Customer + user */}
-{selected?.organization && (
-  <div className="mb-3 text-sm text-gray-600">
-    <div>
-      <span className="text-gray-500">Customer:</span>{" "}
-      {selected.organization.company_name || "—"}
-      {selected?.booked_by?.name ? `, ${selected.booked_by.name}` : ""}
-    </div>
-  </div>
-)}
 
-
+            {/* Customer + user */}
+            {selected?.organization && (
+              <div className="mb-3 text-sm text-gray-600">
+                <div>
+                  <span className="text-gray-500">Customer:</span>{" "}
+                  {selected.organization.company_name || "—"}
+                  {selected?.booked_by?.name ? `, ${selected.booked_by.name}` : ""}
+                </div>
+              </div>
+            )}
 
             {/* Route */}
             <div className="mb-4">
@@ -860,59 +817,29 @@ const chargeable =
             </div>
 
             {/* Dates */}
-<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-  {/* PICKUP */}
-  <div className="border rounded p-3">
-    <div className="font-semibold mb-2">Pickup</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* PICKUP */}
+              <div className="border rounded p-3">
+                <div className="font-semibold mb-2">Pickup</div>
+                <AddressDetails a={selected.sender_address} />
+                <hr className="my-2" />
+                <DetailRow label="Requested" value={`${selected.loading_requested_date || ""} ${selected.loading_requested_time || ""}`.trim()} />
+                <DetailRow label="Planned"   value={`${selected.loading_planned_date   || ""} ${selected.loading_planned_time   || ""}`.trim()} />
+                <DetailRow label="Actual"    value={`${selected.loading_actual_date    || ""} ${selected.loading_actual_time    || ""}`.trim()} />
+              </div>
 
-    {/* Adressinfo */}
-    <AddressDetails a={selected.sender_address} />
-
-    {/* Datum/tider */}
-    <hr className="my-2" />
-    <DetailRow
-      label="Requested"
-      value={`${selected.loading_requested_date || ""} ${selected.loading_requested_time || ""}`.trim()}
-    />
-    <DetailRow
-      label="Planned"
-      value={`${selected.loading_planned_date || ""} ${selected.loading_planned_time || ""}`.trim()}
-    />
-    <DetailRow
-      label="Actual"
-      value={`${selected.loading_actual_date || ""} ${selected.loading_actual_time || ""}`.trim()}
-    />
-  </div>
-
-  {/* DELIVERY */}
-  <div className="border rounded p-3">
-    <div className="font-semibold mb-2">Delivery</div>
-
-    {/* Adressinfo */}
-    <AddressDetails a={selected.receiver_address} />
-
-    {/* Datum/tider */}
-    <hr className="my-2" />
-    <DetailRow
-      label="Requested"
-      value={`${selected.unloading_requested_date || ""} ${selected.unloading_requested_time || ""}`.trim()}
-    />
-    <DetailRow
-      label="Planned"
-      value={`${selected.unloading_planned_date || ""} ${selected.unloading_planned_time || ""}`.trim()}
-    />
-    <DetailRow
-      label="Actual"
-      value={`${selected.unloading_actual_date || ""} ${selected.unloading_actual_time || ""}`.trim()}
-    />
-  </div>
-</div>
-
-       
+              {/* DELIVERY */}
+              <div className="border rounded p-3">
+                <div className="font-semibold mb-2">Delivery</div>
+                <AddressDetails a={selected.receiver_address} />
+                <hr className="my-2" />
+                <DetailRow label="Requested" value={`${selected.unloading_requested_date || ""} ${selected.unloading_requested_time || ""}`.trim()} />
+                <DetailRow label="Planned"   value={`${selected.unloading_planned_date   || ""} ${selected.unloading_planned_time   || ""}`.trim()} />
+                <DetailRow label="Actual"    value={`${selected.unloading_actual_date    || ""} ${selected.unloading_actual_time    || ""}`.trim()} />
+              </div>
+            </div>
 
             {/* Goods */}
-
-
             {Array.isArray(selected.goods) && selected.goods.length > 0 && (
               <div className="mt-4">
                 <div className="font-semibold mb-2">Goods</div>
@@ -943,13 +870,12 @@ const chargeable =
                       ))}
                     </tbody>
                     <tfoot>
-  <tr>
-    <td colSpan={5} className="px-3 py-2 bg-gray-50 text-right font-medium">
-      Total chargeable: {Math.round(chargeable)} kg
-    </td>
-  </tr>
-</tfoot>
-
+                      <tr>
+                        <td colSpan={5} className="px-3 py-2 bg-gray-50 text-right font-medium">
+                          Total chargeable: {Math.round(chargeable)} kg
+                        </td>
+                      </tr>
+                    </tfoot>
                   </table>
                 </div>
               </div>
@@ -957,24 +883,14 @@ const chargeable =
 
             {/* References */}
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <DetailCard
-                title="Reference 1"
-                value={selected?.references?.reference1}
-              />
-              <DetailCard
-                title="Reference 2"
-                value={selected?.references?.reference2}
-              />
+              <DetailCard title="Reference 1" value={selected?.references?.reference1} />
+              <DetailCard title="Reference 2" value={selected?.references?.reference2} />
             </div>
 
             {/* CO2 & Transit */}
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
-              {selected.co2_emissions && (
-                <div>🌍 CO₂: {Number(selected.co2_emissions).toFixed(1)} kg</div>
-              )}
-              {selected.transit_time_days && (
-                <div>Transit time: {selected.transit_time_days}</div>
-              )}
+              {selected.co2_emissions && <div>🌍 CO₂: {Number(selected.co2_emissions).toFixed(1)} kg</div>}
+              {selected.transit_time_days && <div>Transit time: {selected.transit_time_days}</div>}
             </div>
           </div>
         )}
@@ -982,7 +898,6 @@ const chargeable =
     </div>
   );
 }
-
 
 /* Wrappers för sidorna */
 function ViewBookings() {
@@ -1038,18 +953,17 @@ function MyAccount() {
     <div className="max-w-xl">
       <h1 className="text-3xl font-bold mb-4">My account</h1>
       {err && <div className="text-red-600 mb-2">{String(err)}</div>}
-{me && (
-  <div className="mb-8 bg-white rounded border p-4 space-y-1">
-    <div><strong>Organization:</strong> {me.organization.company_name}</div>
-    <div><strong>VAT:</strong> {me.organization.vat_number}</div>
-    <div><strong>Address:</strong> {me.organization.address}</div>
-    <div><strong>Postal code:</strong> {me.organization.postal_code || "—"}</div>
-    <div><strong>Country:</strong> {me.organization.country_code || "—"}</div>
-    <div><strong>Payment terms:</strong> {me.organization.payment_terms_days} days</div>
-    <div><strong>Currency:</strong> {me.organization.currency}</div>
-  </div>
-)}
-
+      {me && (
+        <div className="mb-8 bg-white rounded border p-4 space-y-1">
+          <div><strong>Organization:</strong> {me.organization.company_name}</div>
+          <div><strong>VAT:</strong> {me.organization.vat_number}</div>
+          <div><strong>Address:</strong> {me.organization.address}</div>
+          <div><strong>Postal code:</strong> {me.organization.postal_code || "—"}</div>
+          <div><strong>Country:</strong> {me.organization.country_code || "—"}</div>
+          <div><strong>Payment terms:</strong> {me.organization.payment_terms_days} days</div>
+          <div><strong>Currency:</strong> {me.organization.currency}</div>
+        </div>
+      )}
 
       <h2 className="text-xl font-semibold mb-2">Invite a colleague</h2>
       <form onSubmit={sendInvite} className="bg-white rounded border p-4 space-y-3">
@@ -1138,13 +1052,11 @@ function ResultCard({ transport, selectedOption, onSelect }) {
   );
 }
 
-
-
 function AdminPricing() {
   const [me, setMe] = React.useState(null);
   const [cfgPublished, setCfgPublished] = React.useState(null);
   const [cfgDraft, setCfgDraft] = React.useState(null);
-  const [working, setWorking] = React.useState(null); // redigerad config (draft om finns annars published)
+  const [working, setWorking] = React.useState(null);
   const [selectedMode, setSelectedMode] = React.useState("");
   const [tab, setTab] = React.useState("general");
   const [msg, setMsg] = React.useState("");
@@ -1176,9 +1088,6 @@ function AdminPricing() {
   }
 
   function parseZones(text) {
-    // Format:
-    // SE: 20-89, 90
-    // DK: 00-99
     const out = {};
     text.split("\n").forEach((line) => {
       const s = line.trim();
@@ -1196,9 +1105,6 @@ function AdminPricing() {
   }
 
   function parseBalance(text) {
-    // Format:
-    // SE-DE=1.0
-    // DE-SE=1.05
     const out = {};
     text.split("\n").forEach((line) => {
       const s = line.trim();
@@ -1263,7 +1169,6 @@ function AdminPricing() {
       if (!res.ok || !j.ok) throw new Error(j.error || `HTTP ${res.status}`);
       setMsg(`✅ Published version ${j.version}`);
       setCfgPublished(working);
-      // draft tas bort i backend → hämta om
     } catch (e) {
       setMsg(`❌ ${String(e.message || e)}`);
     }
@@ -1408,8 +1313,6 @@ function AdminPricing() {
     </div>
   );
 }
-
-
 
 function NewBooking() {
   const [goods, setGoods] = React.useState([{ type: "Colli", weight: "", length: "", width: "", height: "", quantity: 1 }]);
