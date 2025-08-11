@@ -560,7 +560,10 @@ function BookingsSplitView({ adminMode = false }) {
       const unloadPlace = to
         ? `${to.country_code || ""}-${to.postal_code || ""} ${to.city || ""}`.trim()
         : "";
-      const weight = sum(b. || [], (g) => g.weight);
+      //const weight = sum(b.goods || [], (g) => g.weight);
+      // eller lite säkrare:
+      const weight = sum(Array.isArray(b.goods) ? b.goods : [], (g) => g.weight);
+
       return {
         raw: b,
         booking_number: b.booking_number || "",
