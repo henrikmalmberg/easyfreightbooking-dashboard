@@ -109,30 +109,30 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/create-account" element={<CreateAccountPage />} />
 
-          {/* Protected routes */}
-          <Route path="/" element={<ProtectedRoute><Welcome /></ProtectedRoute>} />
-          <Route path="/dashboard" element={<ProtectedRoute><Welcome /></ProtectedRoute>} />
-          <Route path="/new-ing" element={<ProtectedRoute><Newing /></ProtectedRoute>} />
-          <Route path="/confirm" element={<ProtectedRoute><ingForm /></ProtectedRoute>} />
-          <Route path="/view-ings" element={<ProtectedRoute><Viewings /></ProtectedRoute>} />
-          <Route path="/account" element={<ProtectedRoute><MyAccount /></ProtectedRoute>} />
-          <Route
-            path="/admin/pricing"
-              element={
-              <ProtectedRoute>
-                <AdminPricing />
-              </ProtectedRoute>
-              }
-           />
+{/* Protected routes */}
+<Route path="/" element={<ProtectedRoute><Welcome /></ProtectedRoute>} />
+<Route path="/dashboard" element={<ProtectedRoute><Welcome /></ProtectedRoute>} />
+<Route path="/new-booking" element={<ProtectedRoute><NewBooking /></ProtectedRoute>} />
+<Route path="/confirm" element={<ProtectedRoute><BookingForm /></ProtectedRoute>} />
+<Route path="/view-bookings" element={<ProtectedRoute><ViewBookings /></ProtectedRoute>} />
+<Route path="/account" element={<ProtectedRoute><MyAccount /></ProtectedRoute>} />
+<Route
+  path="/admin/pricing"
+  element={
+    <ProtectedRoute>
+      <AdminPricing />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/admin/bookings"
+  element={
+    <ProtectedRoute>
+      <AdminAllBookings />
+    </ProtectedRoute>
+  }
+/>
 
-          <Route
-            path="/admin/ings"
-            element={
-              <ProtectedRoute>
-                <AdminAllings />
-              </ProtectedRoute>
-            }
-          />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to={getToken() ? "/dashboard" : "/login"} replace />} />
