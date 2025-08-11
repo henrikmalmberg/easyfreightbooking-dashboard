@@ -577,6 +577,11 @@ function BookingsSplitView({ adminMode = false }) {
                         <button className="text-gray-400 hover:text-gray-700" onClick={(e)=>{e.stopPropagation(); copy(r.booking_number);}}>⧉</button>
                       </div>
                     </td>
+                            {adminMode && (
+          <td className="px-3 py-2 whitespace-nowrap truncate max-w-[220px]">
+            {r.customer}
+          </td>
+        )
                     <td className="px-3 py-2 whitespace-nowrap truncate max-w-[220px]">{r.load_place}</td>
                     <td className="px-3 py-2 whitespace-nowrap truncate max-w-[220px]">{r.unload_place}</td>
                     <td className="px-3 py-2 text-right whitespace-nowrap">{r.weight ? Math.round(r.weight) : ""}</td>
