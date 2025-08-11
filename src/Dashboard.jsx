@@ -51,7 +51,7 @@ const COUNTRIES = [
   { code: "UA", name: "Ukraine" }
 ];
 
-const BOOKING_REGEX = /^[A-HJ-NP-TV-Z]{2}-[A-HJ-NP-TV-Z]{3}-\d{5}$/i;
+const ING_REGEX = /^[A-HJ-NP-TV-Z]{2}-[A-HJ-NP-TV-Z]{3}-\d{5}$/i;
 
 async function getCoordinates(postal, country) {
   // NOTE: this key is used client-side per your existing setup
@@ -112,9 +112,9 @@ export default function App() {
           {/* Protected routes */}
           <Route path="/" element={<ProtectedRoute><Welcome /></ProtectedRoute>} />
           <Route path="/dashboard" element={<ProtectedRoute><Welcome /></ProtectedRoute>} />
-          <Route path="/new-booking" element={<ProtectedRoute><NewBooking /></ProtectedRoute>} />
-          <Route path="/confirm" element={<ProtectedRoute><BookingForm /></ProtectedRoute>} />
-          <Route path="/view-bookings" element={<ProtectedRoute><ViewBookings /></ProtectedRoute>} />
+          <Route path="/new-ing" element={<ProtectedRoute><Newing /></ProtectedRoute>} />
+          <Route path="/confirm" element={<ProtectedRoute><ingForm /></ProtectedRoute>} />
+          <Route path="/view-ings" element={<ProtectedRoute><Viewings /></ProtectedRoute>} />
           <Route path="/account" element={<ProtectedRoute><MyAccount /></ProtectedRoute>} />
           <Route
             path="/admin/pricing"
@@ -126,10 +126,10 @@ export default function App() {
            />
 
           <Route
-            path="/admin/bookings"
+            path="/admin/ings"
             element={
               <ProtectedRoute>
-                <AdminAllBookings />
+                <AdminAllings />
               </ProtectedRoute>
             }
           />
@@ -887,6 +887,20 @@ function BookingsSplitView({ adminMode = false }) {
        
 
             {/* Goods */}
+            const computeChargeableFromGoods = (goods = []) =>
+            goods.reduce((tot, g) => {
+            const w  = Number(g.weight) || 0;
+            const l  = (Number(g.length) || 0) / 100;
+            const wi = (Number(g.width)  || 0) / 100;
+            const h  = (Number(g.height) || 0) / 100;
+            const q  = Number(g.quantity) || 0;
+            const vol = l * wi * h * 335;
+             return tot + Math.max(w, vol) * q;
+              }, 0);
+
+const chargeable =
+  selected?.chargeable_weight ?? computeChargeableFromGoods(selected?.goods || []);
+
             {Array.isArray(selected.goods) && selected.goods.length > 0 && (
               <div className="mt-4">
                 <div className="font-semibold mb-2">Goods</div>
@@ -919,7 +933,7 @@ function BookingsSplitView({ adminMode = false }) {
                     <tfoot>
   <tr>
     <td colSpan={5} className="px-3 py-2 bg-gray-50 text-right font-medium">
-      Total chargeable: {Math.round(chargeable_weight)} kg
+      Total chargeable: {Math.round(chargeable)} kg
     </td>
   </tr>
 </tfoot>
