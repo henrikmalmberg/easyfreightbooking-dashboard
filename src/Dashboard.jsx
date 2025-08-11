@@ -118,6 +118,7 @@ export default function App() {
 <Route path="/confirm" element={<ProtectedRoute><BookingForm /></ProtectedRoute>} />
 <Route path="/view-bookings" element={<ProtectedRoute><ViewBookings /></ProtectedRoute>} />
 <Route path="/account" element={<ProtectedRoute><MyAccount /></ProtectedRoute>} />
+  <Route path="/all-users" element={<AllUsers />} />
 <Route
   path="/admin/pricing"
   element={
@@ -223,6 +224,11 @@ function Sidebar({ visible, onClose }) {
             </>
             )}
 
+{me?.role === "superadmin" && (
+  <Link to="/all-users" className="block px-3 py-2 rounded-xl hover:bg-gray-50 font-medium">
+    All Users
+  </Link>
+)}
 
             
             <hr className="my-4" />
