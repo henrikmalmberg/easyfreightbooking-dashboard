@@ -771,7 +771,7 @@ function BookingsSplitView({ adminMode = false }) {
                 )}
               </div>
             </div>
- )}
+ 
 {/* Customer + user */}
 {(selected?.organization || selected?.booked_by) && (
   <div className="mb-3 text-sm text-gray-600">
