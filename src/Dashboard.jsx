@@ -408,23 +408,14 @@ function BookingsSplitView({ adminMode = false }) {
   const [err, setErr] = React.useState(null);
   const [selected, setSelected] = React.useState(null);
 
-  // Kolumnfilter
+  // Kolumnfilter (endast de synliga kolumnerna)
   const [filters, setFilters] = React.useState({
     booking_number: "",
     load_place: "",
     unload_place: "",
     weight: "",
-    ldm: "",
-    load_date: "",
-    unload_date: "",
-    ref1: "",
-    ref2: "",
     status: "",
   });
-
-  // Quick search
-  const [quick, setQuick] = React.useState("");
-  const [quickMsg, setQuickMsg] = React.useState("");
 
   React.useEffect(() => {
     let alive = true;
@@ -459,7 +450,6 @@ function BookingsSplitView({ adminMode = false }) {
     EXCEPTION: "bg-rose-100 text-rose-800",
   };
 
-  const fmtDate = (v) => (v || "");
   const sum = (arr, get) => (Array.isArray(arr) ? arr.reduce((t, x) => t + (Number(get(x)) || 0), 0) : 0);
 
   const rows = React.useMemo(() => {
@@ -469,70 +459,29 @@ function BookingsSplitView({ adminMode = false }) {
       const to = b.receiver_address;
       const loadPlace = from ? `${from.country_code || ""}-${from.postal_code || ""} ${from.city || ""}`.trim() : "";
       const unloadPlace = to ? `${to.country_code || ""}-${to.postal_code || ""} ${to.city || ""}`.trim() : "";
-
       const weight = sum(b.goods || [], (g) => g.weight);
-      const ldm = sum(b.goods || [], (g) => g.ldm);
-
-      const loadDate = b.loading_planned_date || b.loading_requested_date || b.requested_pickup_date || null;
-      const unloadDate = b.unloading_planned_date || b.unloading_requested_date || b.requested_delivery_date || null;
-
-      const ref1 = b?.references?.reference1 || "";
-      const ref2 = b?.references?.reference2 || "";
-
       return {
         raw: b,
         booking_number: b.booking_number || "",
         load_place: loadPlace,
         unload_place: unloadPlace,
         weight,
-        ldm,
-        load_date: loadDate,
-        unload_date: unloadDate,
-        ref1,
-        ref2,
         status: b.status || "NEW",
       };
     });
   }, [all]);
 
   const filtered = React.useMemo(() => {
-    const f = filters;
     const like = (v, q) => String(v ?? "").toLowerCase().includes(String(q ?? "").toLowerCase());
     return rows.filter((r) => {
-      if (f.booking_number && !like(r.booking_number, f.booking_number)) return false;
-      if (f.load_place && !like(r.load_place, f.load_place)) return false;
-      if (f.unload_place && !like(r.unload_place, f.unload_place)) return false;
-      if (f.weight && !like(r.weight, f.weight)) return false;
-      if (f.ldm && !like(r.ldm, f.ldm)) return false;
-      if (f.load_date && !like(fmtDate(r.load_date), f.load_date)) return false;
-      if (f.unload_date && !like(fmtDate(r.unload_date), f.unload_date)) return false;
-      if (f.ref1 && !like(r.ref1, f.ref1)) return false;
-      if (f.ref2 && !like(r.ref2, f.ref2)) return false;
-      if (f.status && r.status !== f.status) return false;
+      if (filters.booking_number && !like(r.booking_number, filters.booking_number)) return false;
+      if (filters.load_place && !like(r.load_place, filters.load_place)) return false;
+      if (filters.unload_place && !like(r.unload_place, filters.unload_place)) return false;
+      if (filters.weight && !like(r.weight, filters.weight)) return false;
+      if (filters.status && r.status !== filters.status) return false;
       return true;
     });
   }, [rows, filters]);
-
-  async function quickSearch(e) {
-    e.preventDefault();
-    setQuickMsg("");
-    const q = (quick || "").toUpperCase().trim();
-    if (!q) return;
-    if (!BOOKING_REGEX.test(q)) {
-      setQuickMsg("Format: XX-LLL-#####");
-      return;
-    }
-    try {
-      const r = await fetch(`${API}/bookings/${encodeURIComponent(q)}`, { headers: authHeaders() });
-      const j = await r.json();
-      if (!r.ok) throw new Error(j?.error || `HTTP ${r.status}`);
-      setAll([j]); setSelected(j);
-      setFilters({ booking_number: q, load_place: "", unload_place: "", weight: "", ldm: "", load_date: "", unload_date: "", ref1: "", ref2: "", status: "" });
-      setQuickMsg("1 match");
-    } catch {
-      setAll([]); setSelected(null); setQuickMsg("No result");
-    }
-  }
 
   const copy = async (t) => { try { await navigator.clipboard.writeText(t); } catch {} };
 
@@ -540,53 +489,19 @@ function BookingsSplitView({ adminMode = false }) {
 
   return (
     <div className="flex gap-4 h-[calc(100vh-140px)]">
-      {/* Vänster: lista */}
-      <section className="w-full md:w-[560px] bg-white border rounded-lg shadow-sm flex flex-col overflow-hidden">
-        <div className="p-3 border-b flex items-center gap-2">
-          <form onSubmit={quickSearch} className="flex gap-2 w-full">
-            <input
-              className="border rounded p-2 flex-1"
-              placeholder="Quick search booking number (XX-LLL-#####)"
-              value={quick}
-              onChange={(e) => setQuick(e.target.value)}
-            />
-            <button className="px-3 rounded bg-blue-600 text-white">Search</button>
-            <button
-              type="button"
-              className="px-3 rounded bg-gray-200"
-              onClick={async () => {
-                setQuick(""); setQuickMsg("");
-                try {
-                  const r = await fetch(`${API}/bookings`, { headers: { Authorization: `Bearer ${getToken()}` } });
-                  const j = await r.json();
-                  if (!r.ok) throw new Error(j?.error || `HTTP ${r.status}`);
-                  setAll(j); setSelected(j?.[0] || null);
-                  setFilters({ booking_number: "", load_place: "", unload_place: "", weight: "", ldm: "", load_date: "", unload_date: "", ref1: "", ref2: "", status: "" });
-                } catch (e) { setErr(String(e.message || e)); }
-              }}
-            >
-              Clear
-            </button>
-          </form>
-          {quickMsg && <span className="text-xs text-gray-600">{quickMsg}</span>}
-        </div>
-
+      {/* Vänster: lista (50%) */}
+      <section className="w-1/2 bg-white border rounded-lg shadow-sm flex flex-col overflow-hidden">
         <div className="overflow-auto">
           <table className="min-w-full text-sm">
             <thead className="sticky top-0 bg-gray-50 z-10">
               <tr className="text-left">
-                <th className="px-3 py-2 w-40">Booking #</th>
+                <th className="px-3 py-2 w-44">Booking #</th>
                 <th className="px-3 py-2">Load Place</th>
                 <th className="px-3 py-2">Unload Place</th>
-                <th className="px-3 py-2 w-20">Weight</th>
-                <th className="px-3 py-2 w-20">LDM</th>
-                <th className="px-3 py-2 w-36">Booked Load Date</th>
-                <th className="px-3 py-2 w-40">Booked Unload Date</th>
-                <th className="px-3 py-2 w-40">Reference 1</th>
-                <th className="px-3 py-2 w-40">Reference 2</th>
+                <th className="px-3 py-2 w-24">Weight</th>
                 <th className="px-3 py-2 w-28">Status</th>
               </tr>
-              {/* filterrad */}
+              {/* Filterrad */}
               <tr className="text-left bg-white border-b">
                 <th className="px-3 py-1">
                   <input className="w-full border rounded p-1" placeholder="Contains…" value={filters.booking_number}
@@ -605,26 +520,6 @@ function BookingsSplitView({ adminMode = false }) {
                          onChange={(e)=>setFilters({...filters, weight:e.target.value})}/>
                 </th>
                 <th className="px-3 py-1">
-                  <input className="w-full border rounded p-1" placeholder="Equals…" value={filters.ldm}
-                         onChange={(e)=>setFilters({...filters, ldm:e.target.value})}/>
-                </th>
-                <th className="px-3 py-1">
-                  <input className="w-full border rounded p-1" placeholder="YYYY-MM-DD" value={filters.load_date}
-                         onChange={(e)=>setFilters({...filters, load_date:e.target.value})}/>
-                </th>
-                <th className="px-3 py-1">
-                  <input className="w-full border rounded p-1" placeholder="YYYY-MM-DD" value={filters.unload_date}
-                         onChange={(e)=>setFilters({...filters, unload_date:e.target.value})}/>
-                </th>
-                <th className="px-3 py-1">
-                  <input className="w-full border rounded p-1" placeholder="Contains…" value={filters.ref1}
-                         onChange={(e)=>setFilters({...filters, ref1:e.target.value})}/>
-                </th>
-                <th className="px-3 py-1">
-                  <input className="w-full border rounded p-1" placeholder="Contains…" value={filters.ref2}
-                         onChange={(e)=>setFilters({...filters, ref2:e.target.value})}/>
-                </th>
-                <th className="px-3 py-1">
                   <select className="w-full border rounded p-1" value={filters.status}
                           onChange={(e)=>setFilters({...filters, status:e.target.value})}>
                     <option value="">All</option>
@@ -640,39 +535,36 @@ function BookingsSplitView({ adminMode = false }) {
               {filtered.map((r) => {
                 const isSel = selected?.id === r.raw.id;
                 return (
-                  <tr key={r.raw.id}
-                      className={`cursor-pointer ${isSel ? "bg-blue-50" : "hover:bg-gray-50"}`}
-                      onClick={()=>setSelected(r.raw)}>
-                    <td className="px-3 py-2">
+                  <tr
+                    key={r.raw.id}
+                    className={`cursor-pointer h-10 ${isSel ? "bg-blue-50" : "hover:bg-gray-50"}`}
+                    onClick={()=>setSelected(r.raw)}
+                  >
+                    <td className="px-3 py-2 whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         <BookingNumberBadge value={r.booking_number} />
                         <button className="text-gray-400 hover:text-gray-700" onClick={(e)=>{e.stopPropagation(); copy(r.booking_number);}}>⧉</button>
                       </div>
                     </td>
-                    <td className="px-3 py-2">{r.load_place}</td>
-                    <td className="px-3 py-2">{r.unload_place}</td>
-                    <td className="px-3 py-2 text-right">{r.weight ? Math.round(r.weight) : ""}</td>
-                    <td className="px-3 py-2 text-right">{r.ldm ? Number(r.ldm).toFixed(1) : ""}</td>
-                    <td className="px-3 py-2">{fmtDate(r.load_date)}</td>
-                    <td className="px-3 py-2">{fmtDate(r.unload_date)}</td>
-                    <td className="px-3 py-2 truncate max-w-[160px]" title={r.ref1}>{r.ref1}</td>
-                    <td className="px-3 py-2 truncate max-w-[160px]" title={r.ref2}>{r.ref2}</td>
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-2 whitespace-nowrap truncate max-w-[220px]">{r.load_place}</td>
+                    <td className="px-3 py-2 whitespace-nowrap truncate max-w-[220px]">{r.unload_place}</td>
+                    <td className="px-3 py-2 text-right whitespace-nowrap">{r.weight ? Math.round(r.weight) : ""}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">
                       <span className={`text-xs px-2 py-0.5 rounded ${statusColors[r.status] || "bg-gray-100"}`}>{r.status}</span>
                     </td>
                   </tr>
                 );
               })}
               {filtered.length === 0 && (
-                <tr><td colSpan={10} className="px-3 py-6 text-center text-gray-500">No bookings</td></tr>
+                <tr><td colSpan={5} className="px-3 py-6 text-center text-gray-500">No bookings</td></tr>
               )}
             </tbody>
           </table>
         </div>
       </section>
 
-      {/* Höger: detaljer */}
-      <section className="flex-1 overflow-auto">
+      {/* Höger: detaljer (50%) */}
+      <section className="w-1/2 overflow-auto">
         {!selected ? (
           <div className="text-gray-500">Select a booking from the list.</div>
         ) : (
@@ -706,15 +598,15 @@ function BookingsSplitView({ adminMode = false }) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="border rounded p-3">
                 <div className="font-semibold mb-2">Pickup</div>
-                <DetailRow label="Requested" value={`${fmtDate(selected.loading_requested_date)} ${selected.loading_requested_time || ""}`.trim()} />
-                <DetailRow label="Planned" value={`${fmtDate(selected.loading_planned_date)} ${selected.loading_planned_time || ""}`.trim()} />
-                <DetailRow label="Actual" value={`${fmtDate(selected.loading_actual_date)} ${selected.loading_actual_time || ""}`.trim()} />
+                <DetailRow label="Requested" value={`${selected.loading_requested_date || ""} ${selected.loading_requested_time || ""}`.trim()} />
+                <DetailRow label="Planned" value={`${selected.loading_planned_date || ""} ${selected.loading_planned_time || ""}`.trim()} />
+                <DetailRow label="Actual" value={`${selected.loading_actual_date || ""} ${selected.loading_actual_time || ""}`.trim()} />
               </div>
               <div className="border rounded p-3">
                 <div className="font-semibold mb-2">Delivery</div>
-                <DetailRow label="Requested" value={`${fmtDate(selected.unloading_requested_date)} ${selected.unloading_requested_time || ""}`.trim()} />
-                <DetailRow label="Planned" value={`${fmtDate(selected.unloading_planned_date)} ${selected.unloading_planned_time || ""}`.trim()} />
-                <DetailRow label="Actual" value={`${fmtDate(selected.unloading_actual_date)} ${selected.unloading_actual_time || ""}`.trim()} />
+                <DetailRow label="Requested" value={`${selected.unloading_requested_date || ""} ${selected.unloading_requested_time || ""}`.trim()} />
+                <DetailRow label="Planned" value={`${selected.unloading_planned_date || ""} ${selected.unloading_planned_time || ""}`.trim()} />
+                <DetailRow label="Actual" value={`${selected.unloading_actual_date || ""} ${selected.unloading_actual_time || ""}`.trim()} />
               </div>
             </div>
 
@@ -1076,8 +968,8 @@ function NewBooking() {
 
         <div className="text-sm mt-2">
           <strong>Chargeable weight:</strong>{" "}
-          <span className={chargeableWeight > 25160 ? "text-red-600 font-semibold" : "text-green-600 font-semibold"}>
-            {Math.round(chargeableWeight)} kg
+          <span className={calculateChargeableWeight(goods) > 25160 ? "text-red-600 font-semibold" : "text-green-600 font-semibold"}>
+            {Math.round(calculateChargeableWeight(goods))} kg
           </span>
         </div>
 
