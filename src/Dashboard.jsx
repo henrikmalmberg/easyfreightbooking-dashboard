@@ -424,6 +424,42 @@ function DetailCard({ title, value }) {
   );
 }
 
+function AddressDetails({ a }) {
+  if (!a) return <div className="text-gray-500">—</div>;
+  const line2 = [a.country_code, a.postal_code].filter(Boolean).join("-");
+
+  return (
+    <div className="text-sm text-gray-700 space-y-1">
+      {a.business_name && <div className="font-medium">{a.business_name}</div>}
+      {a.address && <div>{a.address}</div>}
+      {(a.city || line2) && <div>{line2} {a.city}</div>}
+
+      {(a.contact_name || a.phone || a.email) && (
+        <div className="pt-1">
+          <div className="text-xs uppercase tracking-wide text-gray-500">Contact</div>
+          <div>{a.contact_name || "—"}</div>
+          {a.phone && <div>{a.phone}</div>}
+          {a.email && <div>{a.email}</div>}
+        </div>
+      )}
+
+      {a.opening_hours && (
+        <div className="pt-1">
+          <div className="text-xs uppercase tracking-wide text-gray-500">Opening hours</div>
+          <div>{a.opening_hours}</div>
+        </div>
+      )}
+
+      {a.instructions && (
+        <div className="pt-1">
+          <div className="text-xs uppercase tracking-wide text-gray-500">Instructions</div>
+          <div>{a.instructions}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function BookingsSplitView({ adminMode = false }) {
   const [all, setAll] = React.useState(null);
   const [err, setErr] = React.useState(null);
@@ -742,7 +778,8 @@ function BookingsSplitView({ adminMode = false }) {
                 {selected.organization && (
                   <div>
                     <span className="text-gray-500">Customer:</span>{" "}
-                    {selected.organization.company_name}
+                      {selected.organization?.company_name || "—"}
+                      {selected.booked_by?.name ? `, ${selected.booked_by.name}` : ""}
                   </div>
                 )}
                 {selected.booked_by && (
