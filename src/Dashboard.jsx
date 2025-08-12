@@ -9,6 +9,8 @@ import {
 } from "react-router-dom";
 import BookingForm from "./BookingForm";
 import AllUsers from "./AllUsers";
+import AllOrganizations from "./AllOrganizations";
+
 
 /* =========================================================
    API + Auth helpers
@@ -117,6 +119,8 @@ export default function App() {
           <Route path="/view-bookings" element={<ProtectedRoute><ViewBookings /></ProtectedRoute>} />
           <Route path="/account" element={<ProtectedRoute><MyAccount /></ProtectedRoute>} />
           <Route path="/all-users" element={<ProtectedRoute><AllUsers /></ProtectedRoute>} />
+          <Route path="/admin/organizations" element={<ProtectedRoute><AllOrganizations /></ProtectedRoute>} />
+
           <Route
             path="/admin/pricing"
             element={
@@ -222,6 +226,10 @@ function Sidebar({ visible, onClose }) {
                 <Link to="/all-users" className="block text-gray-700 hover:text-blue-600" onClick={onClose}>
                   Admin: All users
                 </Link>
+                <Link to="/admin/organizations" className="block text-gray-700 hover:text-blue-600" onClick={onClose}>
+                  Admin: All organizations
+                </Link>
+
               </>
             )}
 
