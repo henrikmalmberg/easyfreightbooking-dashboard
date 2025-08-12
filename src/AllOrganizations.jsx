@@ -7,20 +7,7 @@ const authHeaders = () => ({
   "Content-Type": "application/json",
   Authorization: "Bearer " + getToken(),
 });
-// api.js
-export const API = "https://easyfreightbooking-api.onrender.com";
-export const getToken = () => localStorage.getItem("jwt") || "";
-export const authHeaders = () => ({
-  "Content-Type": "application/json",
-  Authorization: "Bearer " + getToken(),
-});
-export async function authedGet(path) {
-  const res = await fetch(`${API}${path}`, { headers: authHeaders() });
-  const ct = res.headers.get("content-type") || "";
-  const body = ct.includes("application/json") ? await res.json() : await res.text();
-  if (!res.ok) throw new Error(typeof body === "string" ? body.slice(0,200) : (body.error || `HTTP ${res.status}`));
-  return body;
-}
+
 
 /** ======= Create dialog (inline) ======= */
 function CreateOrgDialog({ open, onClose, onCreated }) {
