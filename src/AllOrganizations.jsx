@@ -1,29 +1,74 @@
 import React from "react";
 
-/* ===== API helpers (samma bas som i dashboard.jsx) ===== */
+/** -------------------------------------------------------
+ *  Config & helpers
+ * ------------------------------------------------------*/
 const API = "https://easyfreightbooking-api.onrender.com";
+
 const getToken = () => localStorage.getItem("jwt") || "";
+
 const authHeaders = () => ({
   "Content-Type": "application/json",
   Authorization: "Bearer " + getToken(),
 });
-async function getJSON(url, init = {}) {
-  const res = await fetch(url, init);
+
+/** Fetch helper som:
+ *  - loggar URL, status och text vid fel
+ *  - försöker parse:a JSON, annars returnerar text
+ */
+async function fetchJSON(url, opts = {}) {
+  const res = await fetch(url, { ...opts, headers: { ...authHeaders(), ...(opts.headers || {}) } });
   const ct = res.headers.get("content-type") || "";
-  const data = ct.includes("application/json") ? await res.json() : await res.text();
-  if (!res.ok) throw new Error(typeof data === "string" ? data : data?.error || `HTTP ${res.status}`);
-  return data;
+  const bodyText = await res.text();
+  let data = null;
+  try {
+    data = ct.includes("application/json") ? JSON.parse(bodyText) : null;
+  } catch {
+    data = null;
+  }
+  if (!res.ok) {
+    console.error("API ERROR", {
+      url,
+      status: res.status,
+      statusText: res.statusText,
+      headers: Object.fromEntries(res.headers.entries()),
+      bodySnippet: bodyText.slice(0, 400),
+    });
+    const msg = data?.error || `${res.status} ${res.statusText}`;
+    throw new Error(msg);
+  }
+  return data ?? bodyText;
 }
 
-/* ====== Row editor ====== */
-function OrgRowEditor({ initial, onCancel, onSaved }) {
-  const [v, setV] = React.useState(
+/** Små UI-bitar */
+function Badge({ children, className = "" }) {
+  return (
+    <span className={`px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-800 ${className}`}>
+      {children}
+    </span>
+  );
+}
+
+function TextInput({ label, ...props }) {
+  return (
+    <label className="block">
+      <span className="text-xs text-gray-500">{label}</span>
+      <input {...props} className={`mt-1 w-full border rounded p-2 ${props.className || ""}`} />
+    </label>
+  );
+}
+
+/** -------------------------------------------------------
+ *  Editor-modal för create/update
+ * ------------------------------------------------------*/
+function OrgEditor({ open, onClose, onSave, initial }) {
+  const [form, setForm] = React.useState(
     initial || {
       company_name: "",
       vat_number: "",
       address: "",
       postal_code: "",
-      country_code: "SE",
+      country_code: "",
       invoice_email: "",
       payment_terms_days: 10,
       currency: "EUR",
@@ -31,166 +76,201 @@ function OrgRowEditor({ initial, onCancel, onSaved }) {
   );
   const [saving, setSaving] = React.useState(false);
   const [err, setErr] = React.useState("");
-  const isNew = !initial?.id;
 
-  const save = async () => {
+  React.useEffect(() => {
+    if (initial) setForm(initial);
+  }, [initial]);
+
+  if (!open) return null;
+
+  const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
+
+  async function handleSubmit(e) {
+    e.preventDefault();
     setErr("");
     setSaving(true);
     try {
-      const url = isNew
-        ? `${API}/admin/organizations`
-        : `${API}/admin/organizations/${initial.id}`;
-      const method = isNew ? "POST" : "PUT";
-      const body = JSON.stringify(v);
-      const data = await getJSON(url, { method, headers: authHeaders(), body });
-      onSaved(data, isNew ? "created" : "updated");
-    } catch (e) {
-      setErr(String(e.message || e));
+      await onSave(form);
+      onClose();
+    } catch (e2) {
+      setErr(String(e2.message || e2));
     } finally {
       setSaving(false);
     }
-  };
-
-  const del = async () => {
-    if (isNew) return onCancel();
-    if (!confirm("Delete this organization?\n\nOBS! Blockeras om det finns bookings.")) return;
-    try {
-      await getJSON(`${API}/admin/organizations/${initial.id}`, {
-        method: "DELETE",
-        headers: authHeaders(),
-      });
-      onSaved(null, "deleted");
-    } catch (e) {
-      // Testa force om användaren vill
-      if (String(e.message).includes("cannot delete") || String(e.message).includes("users")) {
-        if (confirm("Delete blocked (users or bookings). Try FORCE delete users/addresses?")) {
-          await getJSON(`${API}/admin/organizations/${initial.id}?force=1`, {
-            method: "DELETE",
-            headers: authHeaders(),
-          });
-          onSaved(null, "deleted");
-          return;
-        }
-      }
-      alert(e.message);
-    }
-  };
-
-  const I = (p) => (
-    <input
-      className="w-full border rounded p-2"
-      value={v[p] ?? ""}
-      onChange={(e) => setV((x) => ({ ...x, [p]: e.target.value }))}
-    />
-  );
+  }
 
   return (
-    <tr className="bg-white">
-      <td className="px-3 py-2">{I("company_name")}</td>
-      <td className="px-3 py-2">{I("vat_number")}</td>
-      <td className="px-3 py-2">{I("address")}</td>
-      <td className="px-3 py-2 w-36">{I("postal_code")}</td>
-      <td className="px-3 py-2 w-24">{I("country_code")}</td>
-      <td className="px-3 py-2">{I("invoice_email")}</td>
-      <td className="px-3 py-2 w-24">
-        <input
-          className="w-full border rounded p-2"
-          type="number"
-          value={v.payment_terms_days ?? ""}
-          onChange={(e) =>
-            setV((x) => ({ ...x, payment_terms_days: Number(e.target.value || 0) }))
-          }
-        />
-      </td>
-      <td className="px-3 py-2 w-24">{I("currency")}</td>
-      <td className="px-3 py-2 whitespace-nowrap">
-        <div className="flex gap-2">
-          <button
-            onClick={save}
-            disabled={saving}
-            className="px-3 py-1.5 rounded bg-green-600 text-white hover:bg-green-700 disabled:opacity-60"
-          >
-            {saving ? "Saving…" : "Save"}
-          </button>
-          <button onClick={onCancel} className="px-3 py-1.5 rounded border">
-            Cancel
-          </button>
-          {!isNew && (
-            <button onClick={del} className="px-3 py-1.5 rounded border text-red-600 hover:text-red-500">
-              Delete
-            </button>
-          )}
+    <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg shadow-md w-[720px] max-w-[95vw]">
+        <div className="px-5 py-3 border-b font-semibold">
+          {form.id ? "Edit organization" : "New organization"}
         </div>
-        {err && <div className="text-red-600 text-xs mt-1">{err}</div>}
-      </td>
-    </tr>
+        <form onSubmit={handleSubmit} className="p-5 grid grid-cols-1 md:grid-cols-2 gap-3">
+          {err && (
+            <div className="md:col-span-2 text-red-600 text-sm whitespace-pre-wrap">{err}</div>
+          )}
+          <TextInput
+            label="Company name"
+            value={form.company_name}
+            onChange={(e) => set("company_name", e.target.value)}
+            required
+          />
+          <TextInput
+            label="VAT number"
+            value={form.vat_number}
+            onChange={(e) => set("vat_number", e.target.value)}
+            required
+          />
+          <TextInput
+            label="Address"
+            value={form.address || ""}
+            onChange={(e) => set("address", e.target.value)}
+          />
+          <TextInput
+            label="Invoice email"
+            type="email"
+            value={form.invoice_email || ""}
+            onChange={(e) => set("invoice_email", e.target.value)}
+            required
+          />
+          <TextInput
+            label="Postal code"
+            value={form.postal_code || ""}
+            onChange={(e) => set("postal_code", e.target.value)}
+          />
+          <TextInput
+            label="Country (CC)"
+            value={form.country_code || ""}
+            onChange={(e) => set("country_code", e.target.value.toUpperCase())}
+            placeholder="SE, DE, NO …"
+          />
+          <TextInput
+            label="Payment terms (days)"
+            type="number"
+            value={form.payment_terms_days ?? ""}
+            onChange={(e) => set("payment_terms_days", e.target.value)}
+          />
+          <TextInput
+            label="Currency"
+            value={form.currency || "EUR"}
+            onChange={(e) => set("currency", e.target.value.toUpperCase())}
+          />
+
+          <div className="md:col-span-2 flex items-center justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-3 py-1.5 rounded border hover:bg-gray-50"
+              disabled={saving}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="px-4 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
+            >
+              {saving ? "Saving…" : "Save"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }
 
-/* ====== Page ====== */
+/** -------------------------------------------------------
+ *  Huvudlista
+ * ------------------------------------------------------*/
 export default function AllOrganizations() {
   const [items, setItems] = React.useState([]);
   const [total, setTotal] = React.useState(0);
-  const [q, setQ] = React.useState("");
   const [page, setPage] = React.useState(1);
   const [pageSize, setPageSize] = React.useState(25);
+  const [q, setQ] = React.useState("");
   const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState("");
-  const [editingId, setEditingId] = React.useState(null);
-  const [creating, setCreating] = React.useState(false);
+  const [err, setErr] = React.useState("");
+  const [editorOpen, setEditorOpen] = React.useState(false);
+  const [editRow, setEditRow] = React.useState(null);
 
-  const load = React.useCallback(async () => {
+  async function load() {
+    setErr("");
     setLoading(true);
-    setError("");
     try {
-      const data = await getJSON(
-        `${API}/admin/organizations?search=${encodeURIComponent(q)}&page=${page}&page_size=${pageSize}`,
-        { headers: authHeaders() }
-      );
+      const url = `${API}/admin/organizations?search=${encodeURIComponent(q)}&page=${page}&page_size=${pageSize}`;
+      const data = await fetchJSON(url);
       setItems(data.items || []);
       setTotal(data.total || 0);
     } catch (e) {
-      setError(String(e.message || e));
       setItems([]);
       setTotal(0);
+      setErr(String(e.message || e));
     } finally {
       setLoading(false);
     }
-  }, [q, page, pageSize]);
+  }
 
   React.useEffect(() => {
     load();
-  }, [load]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q, page, pageSize]);
 
-  const onSaved = (payload, op) => {
-    setCreating(false);
-    setEditingId(null);
-    load();
-  };
+  function openCreate() {
+    setEditRow(null);
+    setEditorOpen(true);
+  }
+  function openEdit(row) {
+    setEditRow(row);
+    setEditorOpen(true);
+  }
 
-  const pages = Math.max(1, Math.ceil(total / pageSize));
+  async function saveForm(form) {
+    if (form.id) {
+      // UPDATE
+      const url = `${API}/admin/organizations/${form.id}`;
+      await fetchJSON(url, { method: "PUT", body: JSON.stringify(form) });
+    } else {
+      // CREATE
+      const url = `${API}/admin/organizations`;
+      await fetchJSON(url, { method: "POST", body: JSON.stringify(form) });
+    }
+    await load();
+  }
+
+  async function doDelete(row) {
+    if (!window.confirm(`Delete organization "${row.company_name}"?\n\nOBS: blockeras om bookings finns.`)) return;
+    try {
+      const url = `${API}/admin/organizations/${row.id}`;
+      await fetchJSON(url, { method: "DELETE" });
+      await load();
+    } catch (e) {
+      alert("Delete failed: " + String(e.message || e));
+    }
+  }
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
     <div className="max-w-5xl">
       <h1 className="text-3xl font-bold mb-2">All Organizations</h1>
-      <div className="text-gray-600 mb-3">Search, edit, create and delete organizations.</div>
+      <p className="text-gray-600 mb-4">Search, edit, create and delete organizations.</p>
 
       <div className="flex items-center gap-3 mb-3">
         <input
-          className="w-[560px] border rounded p-2"
+          className="flex-1 border rounded p-2"
           placeholder="Global search (name, VAT, email)"
           value={q}
           onChange={(e) => {
-            setQ(e.target.value);
             setPage(1);
+            setQ(e.target.value);
           }}
         />
         <select
-          className="border rounded p-2"
+          className="border rounded p-2 w-36"
           value={pageSize}
           onChange={(e) => {
-            setPageSize(Number(e.target.value));
             setPage(1);
+            setPageSize(Number(e.target.value));
           }}
         >
           {[10, 25, 50, 100].map((n) => (
@@ -200,16 +280,20 @@ export default function AllOrganizations() {
           ))}
         </select>
         <button
-          onClick={() => setCreating(true)}
-          className="ml-auto px-5 py-2 rounded bg-green-600 text-white hover:bg-green-700"
+          onClick={openCreate}
+          className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700"
         >
           New organization
         </button>
       </div>
 
-      {error && (
-        <div className="mb-3 text-red-600">
-          <span className="font-semibold">✗</span> {error}
+      {err && (
+        <div className="mb-2 text-red-600 text-sm">
+          <span className="font-semibold mr-1">✖</span>
+          {err}{" "}
+          <span className="text-gray-500">
+            (se console för detaljer: URL, status och body-snippet)
+          </span>
         </div>
       )}
 
@@ -229,40 +313,50 @@ export default function AllOrganizations() {
             </tr>
           </thead>
           <tbody>
-            {creating && (
-              <OrgRowEditor initial={null} onCancel={() => setCreating(false)} onSaved={onSaved} />
-            )}
-            {items.map((o) =>
-              editingId === o.id ? (
-                <OrgRowEditor key={o.id} initial={o} onCancel={() => setEditingId(null)} onSaved={onSaved} />
-              ) : (
-                <tr key={o.id} className="border-t hover:bg-gray-50">
-                  <td className="px-3 py-2">{o.company_name}</td>
-                  <td className="px-3 py-2">{o.vat_number}</td>
-                  <td className="px-3 py-2">{o.address}</td>
-                  <td className="px-3 py-2">{o.postal_code}</td>
-                  <td className="px-3 py-2">{o.country_code}</td>
-                  <td className="px-3 py-2">{o.invoice_email}</td>
-                  <td className="px-3 py-2">{o.payment_terms_days}</td>
-                  <td className="px-3 py-2">{o.currency}</td>
-                  <td className="px-3 py-2 whitespace-nowrap">
-                    <button
-                      onClick={() => setEditingId(o.id)}
-                      className="px-3 py-1.5 rounded border hover:bg-gray-50"
-                    >
-                      Edit
-                    </button>
-                  </td>
-                </tr>
-              )
+            {loading && (
+              <tr>
+                <td colSpan={9} className="px-3 py-6 text-center text-gray-500">
+                  Loading…
+                </td>
+              </tr>
             )}
             {!loading && items.length === 0 && (
               <tr>
-                <td className="px-3 py-6 text-center text-gray-500" colSpan={9}>
+                <td colSpan={9} className="px-3 py-6 text-center text-gray-500">
                   No organizations
                 </td>
               </tr>
             )}
+            {items.map((r) => (
+              <tr key={r.id} className="border-t">
+                <td className="px-3 py-2">{r.company_name}</td>
+                <td className="px-3 py-2">{r.vat_number}</td>
+                <td className="px-3 py-2">{r.address || "—"}</td>
+                <td className="px-3 py-2">{r.postal_code || "—"}</td>
+                <td className="px-3 py-2">{r.country_code || "—"}</td>
+                <td className="px-3 py-2">{r.invoice_email || "—"}</td>
+                <td className="px-3 py-2">
+                  <Badge>{(r.payment_terms_days ?? "—") + " d"}</Badge>
+                </td>
+                <td className="px-3 py-2">{r.currency || "—"}</td>
+                <td className="px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <button
+                      className="text-blue-600 hover:underline"
+                      onClick={() => openEdit(r)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="text-red-600 hover:underline"
+                      onClick={() => doDelete(r)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
@@ -271,24 +365,31 @@ export default function AllOrganizations() {
         <div>Total: {total}</div>
         <div className="flex items-center gap-2">
           <button
+            className="px-3 py-1.5 rounded border hover:bg-gray-50"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page <= 1}
-            className="px-3 py-1.5 rounded border disabled:opacity-60"
           >
             Prev
           </button>
-          <div>
-            Page {page} / {pages}
-          </div>
+          <span>
+            Page {page} / {totalPages}
+          </span>
           <button
-            onClick={() => setPage((p) => Math.min(pages, p + 1))}
-            disabled={page >= pages}
-            className="px-3 py-1.5 rounded border disabled:opacity-60"
+            className="px-3 py-1.5 rounded border hover:bg-gray-50"
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page >= totalPages}
           >
             Next
           </button>
         </div>
       </div>
+
+      <OrgEditor
+        open={editorOpen}
+        initial={editRow}
+        onClose={() => setEditorOpen(false)}
+        onSave={saveForm}
+      />
     </div>
   );
 }
