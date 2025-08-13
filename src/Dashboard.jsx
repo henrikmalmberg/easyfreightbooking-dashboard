@@ -660,33 +660,61 @@ function BookingsSplitView({ adminMode = false }) {
     }
   }
 
-  async function doReassign() {
-    if (!selected?.id || !reassignOrgId) {
-      setReassignMsg("Please choose a customer.");
-      return;
-    }
-    setReassignMsg("Working…");
-    try {
-      const res = await fetch(`${API}/admin/bookings/${selected.id}/reassign`, {
-        method: "POST",
-        headers: authHeaders(),
-        body: JSON.stringify({ org_id: Number(reassignOrgId) }),
-      });
-      const j = await res.json();
-      if (!res.ok) throw new Error(j?.error || `HTTP ${res.status}`);
-      setReassignMsg("✅ Booking moved");
-      setShowReassign(false);
-      await loadAll();
-    } catch (e) {
-      // Vänligt fel om endpoint saknas ännu
-      const msg = String(e.message || e);
-      const hint =
-        msg.includes("404") || msg.toLowerCase().includes("not found")
-          ? "\nHint: implementera POST /admin/bookings/:id/reassign i API:t."
-          : "";
-      setReassignMsg(`❌ ${msg}${hint}`);
-    }
+async function doReassign() {
+  if (!selected?.id) {
+    setReassignMsg("No booking selected.");
+    return;
   }
+  const orgIdNum = Number(reassignOrgId);
+  if (!orgIdNum || Number.isNaN(orgIdNum)) {
+    setReassignMsg("Please choose a valid customer.");
+    return;
+  }
+  if (orgIdNum === selected?.organization?.id) {
+    setReassignMsg("This booking already belongs to that customer.");
+    return;
+  }
+
+  setReassignMsg("Working…");
+  try {
+    const res = await fetch(`${API}/admin/bookings/${selected.id}/reassign`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({
+        org_id: orgIdNum,
+        clear_user: true,        // ← nollställ user-länken vid flytt
+      }),
+    });
+
+    // Försök tolka JSON även vid fel, för bättre felmeddelanden
+    let j = null;
+    try { j = await res.json(); } catch {}
+
+    if (!res.ok) {
+      const backend = j?.error || j?.detail;
+      throw new Error(backend ? `${backend} (HTTP ${res.status})` : `HTTP ${res.status}`);
+    }
+
+    setReassignMsg("✅ Booking moved");
+    setShowReassign(false);
+
+    // Ladda om listan och försök behålla fokus på den flyttade bokningen
+    const movedId = j?.id || selected.id;
+    await loadAll();
+    setSelected((list) => {
+      // om du har access till "all" här, välj raden med movedId
+      return (prev) => prev; // lämna som är om du inte har referensen här
+    });
+  } catch (e) {
+    const msg = String(e.message || e);
+    const hint =
+      msg.includes("404") || msg.toLowerCase().includes("not found")
+        ? "\nHint: implementera POST /admin/bookings/:id/reassign i API:t."
+        : "";
+    setReassignMsg(`❌ ${msg}${hint}`);
+  }
+}
+
 
   return (
     <div className="flex gap-4 h-[calc(100vh-140px)]">
