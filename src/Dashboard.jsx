@@ -795,6 +795,17 @@ function BookingsSplitView({ adminMode = false }) {
                   <div className="font-medium">{Math.round(selected.price_eur)} EUR</div>
                 )}
               </div>
+
+              {/* Visa bara för superadmin */}
+              {selected && me?.user?.role === "superadmin" && (
+              <button
+              onClick={() => setShowReassign(true)}
+              className="mt-2 px-3 py-1 text-xs bg-gray-100 border rounded hover:bg-gray-200"
+              >
+              Change customer
+              </button>
+              )}
+              
             </div>
 
             {/* Customer + user */}
