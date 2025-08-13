@@ -689,9 +689,7 @@ async function doReassign() {
 }
 
 
-    // Försök tolka JSON även vid fel, för bättre felmeddelanden
-    let j = null;
-    try { j = await res.json(); } catch {}
+
 
     if (!res.ok) {
       const backend = j?.error || j?.detail;
