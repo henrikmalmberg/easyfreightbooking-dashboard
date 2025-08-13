@@ -661,30 +661,31 @@ function BookingsSplitView({ adminMode = false }) {
   }
 
 async function doReassign() {
-  if (!selected?.id) {
-    setReassignMsg("No booking selected.");
+  if (!selected?.id || !reassignOrgId) {
+    setReassignMsg("Please choose a customer.");
     return;
   }
-  const orgIdNum = Number(reassignOrgId);
-  if (!orgIdNum || Number.isNaN(orgIdNum)) {
-    setReassignMsg("Please choose a valid customer.");
-    return;
-  }
-  if (orgIdNum === selected?.organization?.id) {
-    setReassignMsg("This booking already belongs to that customer.");
-    return;
-  }
-
   setReassignMsg("Working…");
   try {
     const res = await fetch(`${API}/admin/bookings/${selected.id}/reassign`, {
-      method: "POST",
+      method: "PATCH",                               // <-- ändrat
       headers: authHeaders(),
       body: JSON.stringify({
-        org_id: orgIdNum,
-        clear_user: true,        // ← nollställ user-länken vid flytt
+        organization_id: Number(reassignOrgId),     // <-- ändrat namn
+        user_id: null                               // nollställ kopplad user
       }),
     });
+    const j = await res.json();
+    if (!res.ok) throw new Error(j?.error || `HTTP ${res.status}`);
+    setReassignMsg("✅ Booking moved");
+    setShowReassign(false);
+    await loadAll();
+  } catch (e) {
+    const msg = String(e.message || e);
+    setReassignMsg(`❌ ${msg}`);
+  }
+}
+
 
     // Försök tolka JSON även vid fel, för bättre felmeddelanden
     let j = null;
