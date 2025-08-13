@@ -513,47 +513,19 @@ function BookingsSplitView({ adminMode = false }) {
     customer: "",
   });
 
-  React.useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        if (adminMode) {
-          const me = await authedGet("/me");
-          if (me?.user?.role !== "superadmin") throw new Error("Forbidden");
-        }
-        const r = await fetch(`${API}/bookings`, {
-          headers: { Authorization: `Bearer ${getToken()}` },
-        });
-        const j = await r.json();
-        if (!r.ok) throw new Error(j?.error || `HTTP ${r.status}`);
-        if (alive) {
-          setAll(j);
-          setSelected(j?.[0] || null);
-        }
-      } catch (e) {
-        if (alive) setErr(String(e.message || e));
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, [adminMode]);
+  // superadmin / me
+  const [me, setMe] = React.useState(null);
 
-  const computeChargeableFromGoods = (goods = []) =>
-    goods.reduce((tot, g) => {
-      const w  = Number(g.weight) || 0;
-      const l  = (Number(g.length) || 0) / 100;
-      const wi = (Number(g.width)  || 0) / 100;
-      const h  = (Number(g.height) || 0) / 100;
-      const q  = Number(g.quantity) || 0;
-      const vol = l * wi * h * 335;
-      return tot + Math.max(w, vol) * q;
-    }, 0);
+  // reassign modal state
+  const [showReassign, setShowReassign] = React.useState(false);
+  const [orgs, setOrgs] = React.useState([]);
+  const [orgLoading, setOrgLoading] = React.useState(false);
+  const [reassignOrgId, setReassignOrgId] = React.useState("");
+  const [reassignMsg, setReassignMsg] = React.useState("");
 
-  const chargeable =
-    typeof selected?.chargeable_weight === "number"
-      ? selected.chargeable_weight
-      : computeChargeableFromGoods(selected?.goods);
+  // ===== Helpers =====
+  const sum = (arr, get) =>
+    Array.isArray(arr) ? arr.reduce((t, x) => t + (Number(get(x)) || 0), 0) : 0;
 
   const statusColors = {
     NEW: "bg-gray-200 text-gray-800",
@@ -569,9 +541,53 @@ function BookingsSplitView({ adminMode = false }) {
     EXCEPTION: "bg-rose-100 text-rose-800",
   };
 
-  const sum = (arr, get) =>
-    Array.isArray(arr) ? arr.reduce((t, x) => t + (Number(get(x)) || 0), 0) : 0;
+  const computeChargeableFromGoods = (goods = []) =>
+    goods.reduce((tot, g) => {
+      const w = Number(g.weight) || 0;
+      const l = (Number(g.length) || 0) / 100;
+      const wi = (Number(g.width) || 0) / 100;
+      const h = (Number(g.height) || 0) / 100;
+      const q = Number(g.quantity) || 0;
+      const vol = l * wi * h * 335;
+      return tot + Math.max(w, vol) * q;
+    }, 0);
 
+  // ===== Load data =====
+  const loadAll = React.useCallback(async () => {
+    setErr(null);
+    try {
+      if (adminMode) {
+        const who = await authedGet("/me");
+        setMe(who?.user || null);
+        if (who?.user?.role !== "superadmin") throw new Error("Forbidden");
+      } else {
+        // user mode – hämta ändå /me för UI-bitar
+        authedGet("/me").then((d) => setMe(d?.user || null)).catch(() => {});
+      }
+
+      const r = await fetch(`${API}/bookings`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j?.error || `HTTP ${r.status}`);
+      setAll(j);
+      setSelected(j?.[0] || null);
+    } catch (e) {
+      setErr(String(e.message || e));
+    }
+  }, [adminMode]);
+
+  React.useEffect(() => {
+    let alive = true;
+    (async () => {
+      await loadAll();
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [loadAll]);
+
+  // ===== Rows + filters =====
   const rows = React.useMemo(() => {
     if (!Array.isArray(all)) return [];
     return all.map((b) => {
@@ -611,6 +627,11 @@ function BookingsSplitView({ adminMode = false }) {
     });
   }, [rows, filters, adminMode]);
 
+  const chargeable =
+    typeof selected?.chargeable_weight === "number"
+      ? selected.chargeable_weight
+      : computeChargeableFromGoods(selected?.goods);
+
   const copy = async (t) => {
     try {
       await navigator.clipboard.writeText(t);
@@ -621,6 +642,51 @@ function BookingsSplitView({ adminMode = false }) {
     return <div className="text-red-600">403 – Admin only</div>;
 
   const emptyColSpan = adminMode ? 6 : 5;
+
+  // ===== Reassign: load orgs on open =====
+  async function openReassign() {
+    setReassignMsg("");
+    setReassignOrgId("");
+    setShowReassign(true);
+    if (!adminMode) return;
+    try {
+      setOrgLoading(true);
+      const r = await authedGet("/organizations");
+      setOrgs(Array.isArray(r) ? r : []);
+    } catch (e) {
+      setReassignMsg(`❌ Could not load organizations: ${String(e.message || e)}`);
+    } finally {
+      setOrgLoading(false);
+    }
+  }
+
+  async function doReassign() {
+    if (!selected?.id || !reassignOrgId) {
+      setReassignMsg("Please choose a customer.");
+      return;
+    }
+    setReassignMsg("Working…");
+    try {
+      const res = await fetch(`${API}/admin/bookings/${selected.id}/reassign`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ org_id: Number(reassignOrgId) }),
+      });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j?.error || `HTTP ${res.status}`);
+      setReassignMsg("✅ Booking moved");
+      setShowReassign(false);
+      await loadAll();
+    } catch (e) {
+      // Vänligt fel om endpoint saknas ännu
+      const msg = String(e.message || e);
+      const hint =
+        msg.includes("404") || msg.toLowerCase().includes("not found")
+          ? "\nHint: implementera POST /admin/bookings/:id/reassign i API:t."
+          : "";
+      setReassignMsg(`❌ ${msg}${hint}`);
+    }
+  }
 
   return (
     <div className="flex gap-4 h-[calc(100vh-140px)]">
@@ -730,6 +796,7 @@ function BookingsSplitView({ adminMode = false }) {
                             e.stopPropagation();
                             copy(r.booking_number);
                           }}
+                          title="Copy booking number"
                         >
                           ⧉
                         </button>
@@ -762,7 +829,7 @@ function BookingsSplitView({ adminMode = false }) {
 
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={adminMode ? 6 : 5} className="px-3 py-6 text-center text-gray-500">
+                  <td colSpan={emptyColSpan} className="px-3 py-6 text-center text-gray-500">
                     No bookings
                   </td>
                 </tr>
@@ -778,13 +845,14 @@ function BookingsSplitView({ adminMode = false }) {
           <div className="text-gray-500">Select a booking from the list.</div>
         ) : (
           <div className="bg-white border rounded-lg shadow-sm p-4 md:p-6">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-start justify-between mb-4 gap-3">
               <div className="flex items-center gap-3">
                 <span className="text-lg font-semibold">{selected.booking_number}</span>
                 <span className={`text-xs px-2 py-0.5 rounded ${statusColors[selected.status] || "bg-gray-100"}`}>
                   {selected.status || "NEW"}
                 </span>
               </div>
+
               <div className="text-right text-sm text-gray-600">
                 <div>
                   Booked:{" "}
@@ -794,18 +862,17 @@ function BookingsSplitView({ adminMode = false }) {
                 {typeof selected.price_eur === "number" && (
                   <div className="font-medium">{Math.round(selected.price_eur)} EUR</div>
                 )}
-              </div>
 
-              {/* Visa bara för superadmin */}
-              {selected && me?.user?.role === "superadmin" && (
-              <button
-              onClick={() => setShowReassign(true)}
-              className="mt-2 px-3 py-1 text-xs bg-gray-100 border rounded hover:bg-gray-200"
-              >
-              Change customer
-              </button>
-              )}
-              
+                {/* Change customer – endast superadmin i admin-läge */}
+                {adminMode && me?.role === "superadmin" && (
+                  <button
+                    onClick={openReassign}
+                    className="mt-2 px-3 py-1 text-xs bg-gray-100 border rounded hover:bg-gray-200"
+                  >
+                    Change customer
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Customer + user */}
@@ -914,9 +981,62 @@ function BookingsSplitView({ adminMode = false }) {
           </div>
         )}
       </section>
+
+      {/* ===== Reassign Modal ===== */}
+      {showReassign && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-lg font-semibold">Change customer</div>
+              <button onClick={() => setShowReassign(false)} className="text-gray-500 hover:text-gray-800">✕</button>
+            </div>
+
+            <div className="text-sm text-gray-600 mb-3">
+              Booking <strong>{selected?.booking_number}</strong>
+            </div>
+
+            <label className="block mb-3">
+              <span className="text-xs text-gray-500">New customer (organization)</span>
+              <select
+                className="mt-1 w-full border rounded p-2"
+                disabled={orgLoading}
+                value={reassignOrgId}
+                onChange={(e) => setReassignOrgId(e.target.value)}
+              >
+                <option value="">— Select —</option>
+                {orgs.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.name || o.company_name || `#${o.id}`}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {reassignMsg && (
+              <div className="mb-3 text-sm whitespace-pre-wrap">
+                {reassignMsg}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setShowReassign(false)} className="px-3 py-1.5 rounded border">
+                Cancel
+              </button>
+              <button
+                onClick={doReassign}
+                disabled={!reassignOrgId}
+                className={`px-3 py-1.5 rounded text-white ${reassignOrgId ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-300 cursor-not-allowed"}`}
+              >
+                Move booking
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
 
 /* Wrappers för sidorna */
 function ViewBookings() {
