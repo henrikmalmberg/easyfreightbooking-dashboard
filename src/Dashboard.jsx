@@ -166,7 +166,9 @@ export function Layout({ children }) {
         >
           ☰ Menu
         </button>
-        {children}
+        <div className="mx-auto w-full max-w-[1600px]">
+          {children}
+        </div>
       </main>
     </div>
   );
