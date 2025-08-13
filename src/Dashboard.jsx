@@ -668,28 +668,19 @@ async function doReassign() {
     return;
   }
   setReassignMsg("Working…");
+
   try {
     const res = await fetch(`${API}/admin/bookings/${selected.id}/reassign`, {
-      method: "PATCH",                               // <-- ändrat
+      method: "PATCH",
       headers: authHeaders(),
       body: JSON.stringify({
-        organization_id: Number(reassignOrgId),     // <-- ändrat namn
-        user_id: null                               // nollställ kopplad user
+        organization_id: Number(reassignOrgId),
+        user_id: null, // nolla kopplad användare
       }),
     });
-    const j = await res.json();
-    if (!res.ok) throw new Error(j?.error || `HTTP ${res.status}`);
-    setReassignMsg("✅ Booking moved");
-    setShowReassign(false);
-    await loadAll();
-  } catch (e) {
-    const msg = String(e.message || e);
-    setReassignMsg(`❌ ${msg}`);
-  }
-}
 
-
-
+    let j = null;
+    try { j = await res.json(); } catch {}
 
     if (!res.ok) {
       const backend = j?.error || j?.detail;
@@ -699,22 +690,16 @@ async function doReassign() {
     setReassignMsg("✅ Booking moved");
     setShowReassign(false);
 
-    // Ladda om listan och försök behålla fokus på den flyttade bokningen
-    const movedId = j?.id || selected.id;
+    // ladda om listan (utan await utanför)
     await loadAll();
-    setSelected((list) => {
-      // om du har access till "all" här, välj raden med movedId
-      return (prev) => prev; // lämna som är om du inte har referensen här
-    });
+    // (valfritt) försök återmarkera den flyttade
+    const movedId = j?.id || selected.id;
+    setSelected(prev => (prev?.id === movedId ? prev : (all || []).find(b => b.id === movedId) || null));
   } catch (e) {
-    const msg = String(e.message || e);
-    const hint =
-      msg.includes("404") || msg.toLowerCase().includes("not found")
-        ? "\nHint: implementera POST /admin/bookings/:id/reassign i API:t."
-        : "";
-    setReassignMsg(`❌ ${msg}${hint}`);
+    setReassignMsg(`❌ ${String(e.message || e)}`);
   }
 }
+
 
 
   return (
