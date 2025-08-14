@@ -1,4 +1,4 @@
-import React from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -100,8 +100,8 @@ async function getCoordinates(postal, country) {
 }
 
 function useCityLookup(postal, country) {
-  const [data, setData] = React.useState(null);
-  React.useEffect(() => {
+  const [data, setData] = useState(null);
+  useEffect(() => {
     let active = true;
     if (postal.length >= 2 && country) {
       getCoordinates(postal, country).then((res) => {
@@ -170,7 +170,7 @@ export default function App() {
    Layout + Sidebar
 ========================================================= */
 export function Layout({ children }) {
-  const [showSidebar, setShowSidebar] = React.useState(false);
+  const [showSidebar, setShowSidebar] = useState(false);
   return (
     <div className="flex min-h-screen bg-gray-100">
       <div
@@ -197,10 +197,10 @@ export function Layout({ children }) {
 function Sidebar({ visible, onClose }) {
   const nav = useNavigate();
   const authed = !!getToken();
-  const [me, setMe] = React.useState(null);
-  const [err, setErr] = React.useState(null);
+  const [me, setMe] = useState(null);
+  const [err, setErr] = useState(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     let alive = true;
     if (authed) {
       authedGet("/me").then((d) => alive && setMe(d)).catch((e) => alive && setErr(e.message));
@@ -304,9 +304,9 @@ function Sidebar({ visible, onClose }) {
 ========================================================= */
 function LoginPage() {
   const nav = useNavigate();
-  const [email, setEmail] = React.useState("");
-  const [password, setPassword] = React.useState("");
-  const [err, setErr] = React.useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [err, setErr] = useState("");
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -345,15 +345,15 @@ function LoginPage() {
 }
 
 function AddressBook() {
-  const [rows, setRows] = React.useState([]);
-  const [msg, setMsg] = React.useState("");
+  const [rows, setRows] = useState([]);
+  const [msg, setMsg] = useState("");
 
-  const load = React.useCallback(async () => {
+  const load = useCallback(async () => {
     try { setRows(await authedFetch("/addresses")); }
     catch (e) { setMsg(`❌ ${e.message}`); }
   }, []);
 
-  React.useEffect(()=>{ load(); }, [load]);
+  useEffect(()=>{ load(); }, [load]);
 
   async function saveRow(id, patch) {
     setMsg("");
@@ -468,7 +468,7 @@ function AddressBook() {
 
 function CreateAccountPage() {
   const nav = useNavigate();
-  const [form, setForm] = React.useState({
+  const [form, setForm] = useState({
     vat_number: "",
     company_name: "",
     address: "",
@@ -479,7 +479,7 @@ function CreateAccountPage() {
     email: "",
     password: "",
   });
-  const [msg, setMsg] = React.useState("");
+  const [msg, setMsg] = useState("");
 
   const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
   const normalizeVAT = (v) => (v || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
@@ -648,11 +648,11 @@ function AddressDetails({ a }) {
 }
 
 function BookingsSplitView({ adminMode = false }) {
-  const [all, setAll] = React.useState(null);
-  const [err, setErr] = React.useState(null);
-  const [selected, setSelected] = React.useState(null);
+  const [all, setAll] = useState(null);
+  const [err, setErr] = useState(null);
+  const [selected, setSelected] = useState(null);
 
-  const [filters, setFilters] = React.useState({
+  const [filters, setFilters] = useState({
     booking_number: "",
     load_place: "",
     unload_place: "",
@@ -662,14 +662,14 @@ function BookingsSplitView({ adminMode = false }) {
   });
 
   // superadmin / me
-  const [me, setMe] = React.useState(null);
+  const [me, setMe] = useState(null);
 
   // reassign modal state
-  const [showReassign, setShowReassign] = React.useState(false);
-  const [orgs, setOrgs] = React.useState([]);
-  const [orgLoading, setOrgLoading] = React.useState(false);
-  const [reassignOrgId, setReassignOrgId] = React.useState("");
-  const [reassignMsg, setReassignMsg] = React.useState("");
+  const [showReassign, setShowReassign] = useState(false);
+  const [orgs, setOrgs] = useState([]);
+  const [orgLoading, setOrgLoading] = useState(false);
+  const [reassignOrgId, setReassignOrgId] = useState("");
+  const [reassignMsg, setReassignMsg] = useState("");
 
   // ===== Helpers =====
   const sum = (arr, get) =>
@@ -701,7 +701,7 @@ function BookingsSplitView({ adminMode = false }) {
     }, 0);
 
   // ===== Load data =====
-  const loadAll = React.useCallback(async () => {
+  const loadAll = useCallback(async () => {
     setErr(null);
     try {
       if (adminMode) {
@@ -725,7 +725,7 @@ function BookingsSplitView({ adminMode = false }) {
     }
   }, [adminMode]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     let alive = true;
     (async () => {
       await loadAll();
@@ -736,7 +736,7 @@ function BookingsSplitView({ adminMode = false }) {
   }, [loadAll]);
 
   // ===== Rows + filters =====
-  const rows = React.useMemo(() => {
+  const rows = useMemo(() => {
     if (!Array.isArray(all)) return [];
     return all.map((b) => {
       const from = b.sender_address;
@@ -761,7 +761,7 @@ function BookingsSplitView({ adminMode = false }) {
     });
   }, [all, adminMode]);
 
-  const filtered = React.useMemo(() => {
+  const filtered = useMemo(() => {
     const like = (v, q) =>
       String(v ?? "").toLowerCase().includes(String(q ?? "").toLowerCase());
     return rows.filter((r) => {
@@ -1221,12 +1221,12 @@ function AdminAllBookings() {
    Protected: My Account + Invite colleague
 ========================================================= */
 function MyAccount() {
-  const [me, setMe] = React.useState(null);
-  const [err, setErr] = React.useState(null);
-  const [invite, setInvite] = React.useState({ name: "", email: "", password: "", role: "user" });
-  const [inviteMsg, setInviteMsg] = React.useState("");
+  const [me, setMe] = useState(null);
+  const [err, setErr] = useState(null);
+  const [invite, setInvite] = useState({ name: "", email: "", password: "", role: "user" });
+  const [inviteMsg, setInviteMsg] = useState("");
 
-  React.useEffect(() => {
+  useEffect(() => {
     authedGet("/me").then(setMe).catch((e) => setErr(e.message));
   }, []);
 
@@ -1289,7 +1289,7 @@ function MyAccount() {
    Protected: New booking (+ ResultCard)
 ========================================================= */
 function ResultCard({ transport, selectedOption, onSelect }) {
-  const [showInfo, setShowInfo] = React.useState(false);
+  const [showInfo, setShowInfo] = useState(false);
   const icons = {
     road_freight: "🚛",
     express_road: "🚀",
@@ -1352,15 +1352,15 @@ function ResultCard({ transport, selectedOption, onSelect }) {
 }
 
 function AdminPricing() {
-  const [me, setMe] = React.useState(null);
-  const [cfgPublished, setCfgPublished] = React.useState(null);
-  const [cfgDraft, setCfgDraft] = React.useState(null);
-  const [working, setWorking] = React.useState(null);
-  const [selectedMode, setSelectedMode] = React.useState("");
-  const [tab, setTab] = React.useState("general");
-  const [msg, setMsg] = React.useState("");
+  const [me, setMe] = useState(null);
+  const [cfgPublished, setCfgPublished] = useState(null);
+  const [cfgDraft, setCfgDraft] = useState(null);
+  const [working, setWorking] = useState(null);
+  const [selectedMode, setSelectedMode] = useState("");
+  const [tab, setTab] = useState("general");
+  const [msg, setMsg] = useState("");
 
-  React.useEffect(() => {
+  useEffect(() => {
     authedGet("/me").then((m) => {
       if (m?.user?.role !== "superadmin") throw new Error("Forbidden");
       setMe(m);
@@ -1614,10 +1614,10 @@ function AdminPricing() {
 }
 
 function NewBooking() {
-  const [goods, setGoods] = React.useState([{ type: "Colli", weight: "", length: "", width: "", height: "", quantity: 1 }]);
-  const [form, setForm] = React.useState({ pickup_country: "SE", pickup_postal: "", delivery_country: "SE", delivery_postal: "" });
-  const [result, setResult] = React.useState(null);
-  const [selectedOption, setSelectedOption] = React.useState(null);
+  const [goods, setGoods] = useState([{ type: "Colli", weight: "", length: "", width: "", height: "", quantity: 1 }]);
+  const [form, setForm] = useState({ pickup_country: "SE", pickup_postal: "", delivery_country: "SE", delivery_postal: "" });
+  const [result, setResult] = useState(null);
+  const [selectedOption, setSelectedOption] = useState(null);
   const navigate = useNavigate();
 
   const calculateChargeableWeight = (goods) => goods.reduce((total, item) => {
