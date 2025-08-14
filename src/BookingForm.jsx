@@ -391,24 +391,57 @@ export default function BookingForm() {
       return;
     }
 
-    const payload = {
-      selected_mode: option.mode,
-      price_eur: option.total_price_eur,
-      earliest_pickup: option.earliest_pickup_date,
-      transit_time_days: option.transit_time_days,
-      co2_emissions_grams: option.co2_emissions_grams,
-      pickup: { country: search.pickup_country, postal: search.pickup_postal, ...pickup },
-      delivery: { country: search.delivery_country, postal: search.delivery_postal, ...delivery },
-      goods: search.goods,
-      references: refs,
-      addons,
-      booker,
-      update_contact: updateContact,
-      asap_pickup: pickupSchedule.asap,
-      requested_pickup_date: pickupSchedule.asap ? null : pickupSchedule.date,
-      asap_delivery: deliverySchedule.asap,
-      requested_delivery_date: deliverySchedule.asap ? null : deliverySchedule.date,
-    };
+const payload = {
+  selected_mode: option.mode,
+  price_eur: option.total_price_eur,
+  earliest_pickup: option.earliest_pickup_date,
+  transit_time_days: option.transit_time_days,
+  co2_emissions_grams: option.co2_emissions_grams,
+
+  // <-- VIKTIGT: backend vill ha sender / receiver (inte pickup / delivery)
+  sender: {
+    country_code:  search.pickup_country,
+    postal_code:   search.pickup_postal,
+    city:          pickup.city,
+    business_name: pickup.business_name,
+    address:       pickup.address,
+    address2:      pickup.address2 || null,
+    contact_name:  pickup.contact_name,
+    phone:         pickup.phone,
+    email:         pickup.email,
+    opening_hours: pickup.opening_hours || null,
+    instructions:  pickup.instructions  || null,
+  },
+  receiver: {
+    country_code:  search.delivery_country,
+    postal_code:   search.delivery_postal,
+    city:          delivery.city,
+    business_name: delivery.business_name,
+    address:       delivery.address,
+    address2:      delivery.address2 || null,
+    contact_name:  delivery.contact_name,
+    phone:         delivery.phone,
+    email:         delivery.email,
+    opening_hours: delivery.opening_hours || null,
+    instructions:  delivery.instructions  || null,
+  },
+
+  goods:        search.goods,
+  references:   refs,            // { reference1, reference2 }
+  addons,                        // { tail_lift, pre_notice }
+  booker,                        // { name, email, phone }
+  update_contact: updateContact, // { name, email, phone }
+
+  // datumfält – skicka bara om inte “ASAP”
+  asap_pickup: pickupSchedule.asap,
+  requested_pickup_date:   pickupSchedule.asap   ? null : pickupSchedule.date,
+  asap_delivery: deliverySchedule.asap,
+  requested_delivery_date: deliverySchedule.asap ? null : deliverySchedule.date,
+
+  // valfritt om backend använder det
+  chargeable_weight: Math.round(chargeableWeight),
+};
+
 
     const token = getToken();
     if (!token) {
