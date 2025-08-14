@@ -37,6 +37,20 @@ function ProtectedRoute({ children }) {
   return getToken() ? children : <Navigate to="/login" replace />;
 }
 
+// api helpers (samma API-basadress som idag)
+async function authedFetch(path, opts={}) {
+  const res = await fetch(`${API}${path}`, {
+    ...opts,
+    headers: { "Content-Type":"application/json", Authorization:`Bearer ${getToken()}`, ...(opts.headers||{}) }
+  });
+  const txt = await res.text();
+  let body = null; try { body = txt ? JSON.parse(txt) : null; } catch {}
+  if (!res.ok) throw new Error(body?.error || txt || `HTTP ${res.status}`);
+  return body;
+}
+
+
+
 /* =========================================================
    Shared constants/utilities
 ========================================================= */
