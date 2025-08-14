@@ -18,7 +18,7 @@ async function getJSON(url, init = {}) {
 /* ====== Editor row ====== */
 function UserRowEditor({ initial, orgOptions, onCancel, onSaved }) {
   const isNew = !initial?.id;
-  const [v, setV] = React.useState(
+  const [v, setV] = useState(
     initial || {
       organization_id: orgOptions[0]?.id || null,
       name: "",
@@ -28,8 +28,8 @@ function UserRowEditor({ initial, orgOptions, onCancel, onSaved }) {
       is_blocked: false,
     }
   );
-  const [saving, setSaving] = React.useState(false);
-  const [err, setErr] = React.useState("");
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
 
   const save = async () => {
     setErr("");
@@ -197,20 +197,20 @@ function UserRowEditor({ initial, orgOptions, onCancel, onSaved }) {
 
 /* ====== Page ====== */
 export default function AllUsers() {
-  const [items, setItems] = React.useState([]);
-  const [total, setTotal] = React.useState(0);
-  const [q, setQ] = React.useState("");
-  const [page, setPage] = React.useState(1);
-  const [pageSize, setPageSize] = React.useState(25);
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState("");
+  const [items, setItems] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [q, setQ] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const [orgOptions, setOrgOptions] = React.useState([]);
-  const [editingId, setEditingId] = React.useState(null);
-  const [creating, setCreating] = React.useState(false);
+  const [orgOptions, setOrgOptions] = useState([]);
+  const [editingId, setEditingId] = useState(null);
+  const [creating, setCreating] = useState(false);
 
   // Load organizations for dropdown
-  React.useEffect(() => {
+  useEffect(() => {
     (async () => {
       try {
         const data = await getJSON(`${API}/organizations`, { headers: authHeaders() });
@@ -221,7 +221,7 @@ export default function AllUsers() {
     })();
   }, []);
 
-  const load = React.useCallback(async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
@@ -240,7 +240,7 @@ export default function AllUsers() {
     }
   }, [q, page, pageSize]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     load();
   }, [load]);
 
