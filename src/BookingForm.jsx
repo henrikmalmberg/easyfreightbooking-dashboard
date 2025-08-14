@@ -6,9 +6,6 @@ import { useLocation, useNavigate, Link } from "react-router-dom";
 const API = "https://easyfreightbooking-api.onrender.com";
 const getToken = () => localStorage.getItem("jwt") || "";
 
-let userId = 1;
-try { userId = window.loggedInUserId || 1; } catch {}
-
 function SummaryHeader({ search, option }) {
   return (
     <section className="rounded-lg border bg-white px-6 py-5 shadow-sm">
@@ -355,7 +352,7 @@ export default function BookingForm() {
       update_contact: updateContact,
 
       // You can omit user_id; backend falls back to JWT, but keeping doesn't hurt
-      user_id: String(userId),
+      //user_id: String(userId),
 
       asap_pickup: pickupSchedule.asap,
       requested_pickup_date: pickupSchedule.asap ? null : pickupSchedule.date,
