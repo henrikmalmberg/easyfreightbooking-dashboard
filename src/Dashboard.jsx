@@ -134,6 +134,8 @@ export default function App() {
           <Route path="/account" element={<ProtectedRoute><MyAccount /></ProtectedRoute>} />
           <Route path="/all-users" element={<ProtectedRoute><AllUsers /></ProtectedRoute>} />
           <Route path="/admin/organizations" element={<ProtectedRoute><AllOrganizations /></ProtectedRoute>} />
+          <Route path="/address-book" element={<ProtectedRoute><AddressBook /></ProtectedRoute>} />
+
 
           <Route
             path="/admin/pricing"
@@ -230,6 +232,10 @@ function Sidebar({ visible, onClose }) {
             <Link to="/account" className="block text-gray-700 hover:text-blue-600" onClick={onClose}>
               My account
             </Link>
+            <Link to="/address-book" className="block text-gray-700 hover:text-blue-600" onClick={onClose}>
+              Address Book
+            </Link>
+
 
             {isSuperadmin && (
               <>
@@ -333,6 +339,128 @@ function LoginPage() {
     </div>
   );
 }
+
+function AddressBook() {
+  const [rows, setRows] = React.useState([]);
+  const [msg, setMsg] = React.useState("");
+
+  const load = React.useCallback(async () => {
+    try { setRows(await authedFetch("/addresses")); }
+    catch (e) { setMsg(`❌ ${e.message}`); }
+  }, []);
+
+  React.useEffect(()=>{ load(); }, [load]);
+
+  async function saveRow(id, patch) {
+    setMsg("");
+    try {
+      await authedFetch(`/addresses/${id}`, { method:"PUT", body: JSON.stringify(patch) });
+      await load();
+      setMsg("✅ Saved");
+    } catch(e){ setMsg(`❌ ${e.message}`); }
+  }
+
+  async function createRow() {
+    setMsg("");
+    try {
+      const blank = {
+        label: "", type: null,
+        business_name: "", address: "", postal_code: "", city: "",
+        country_code: "", contact_name: "", phone: "", email: "",
+        opening_hours: "", instructions: ""
+      };
+      await authedFetch("/addresses", { method:"POST", body: JSON.stringify(blank) });
+      await load();
+    } catch(e){ setMsg(`❌ ${e.message}`); }
+  }
+
+  async function removeRow(id) {
+    setMsg("");
+    if (!window.confirm("Delete this address?")) return;
+    try { await authedFetch(`/addresses/${id}`, { method:"DELETE" }); await load(); }
+    catch(e){ setMsg(`❌ ${e.message}`); }
+  }
+
+  return (
+    <div>
+      <h1 className="text-3xl font-bold mb-4">🏷️ Address Book</h1>
+      <div className="mb-2 text-sm text-gray-600">Addresses shared within your organization.</div>
+      <div className="mb-3 flex gap-2">
+        <button onClick={createRow} className="px-3 py-1.5 rounded bg-blue-600 text-white">+ New address</button>
+        {msg && <div className="text-sm">{msg}</div>}
+      </div>
+
+      <div className="bg-white border rounded-lg shadow-sm overflow-auto">
+        <table className="min-w-full text-sm">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-3 py-2">Label</th>
+              <th className="px-3 py-2">Type</th>
+              <th className="px-3 py-2">Business</th>
+              <th className="px-3 py-2">Address</th>
+              <th className="px-3 py-2">City</th>
+              <th className="px-3 py-2">CC</th>
+              <th className="px-3 py-2">Postal</th>
+              <th className="px-3 py-2">Contact</th>
+              <th className="px-3 py-2 w-28"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(r => (
+              <tr key={r.id} className="border-t">
+                <td className="px-3 py-1">
+                  <input className="border rounded p-1 w-40" defaultValue={r.label || ""}
+                         onBlur={(e)=>saveRow(r.id, {label:e.target.value})}/>
+                </td>
+                <td className="px-3 py-1">
+                  <select className="border rounded p-1"
+                          defaultValue={r.type || ""}
+                          onChange={(e)=>saveRow(r.id, {type: e.target.value || null})}>
+                    <option value="">—</option>
+                    <option value="sender">sender</option>
+                    <option value="receiver">receiver</option>
+                  </select>
+                </td>
+                <td className="px-3 py-1">
+                  <input className="border rounded p-1 w-48" defaultValue={r.business_name || ""}
+                         onBlur={(e)=>saveRow(r.id, {business_name:e.target.value})}/>
+                </td>
+                <td className="px-3 py-1">
+                  <input className="border rounded p-1 w-64" defaultValue={r.address || ""}
+                         onBlur={(e)=>saveRow(r.id, {address:e.target.value})}/>
+                </td>
+                <td className="px-3 py-1">
+                  <input className="border rounded p-1 w-40" defaultValue={r.city || ""}
+                         onBlur={(e)=>saveRow(r.id, {city:e.target.value})}/>
+                </td>
+                <td className="px-3 py-1">
+                  <input className="border rounded p-1 w-16" maxLength={2} defaultValue={r.country_code || ""}
+                         onBlur={(e)=>saveRow(r.id, {country_code:e.target.value.toUpperCase()})}/>
+                </td>
+                <td className="px-3 py-1">
+                  <input className="border rounded p-1 w-24" defaultValue={r.postal_code || ""}
+                         onBlur={(e)=>saveRow(r.id, {postal_code:e.target.value})}/>
+                </td>
+                <td className="px-3 py-1">
+                  <input className="border rounded p-1 w-48" defaultValue={r.contact_name || ""}
+                         onBlur={(e)=>saveRow(r.id, {contact_name:e.target.value})}/>
+                </td>
+                <td className="px-3 py-1 text-right">
+                  <button onClick={()=>removeRow(r.id)} className="px-2 py-1 rounded border hover:bg-gray-50">Delete</button>
+                </td>
+              </tr>
+            ))}
+            {rows.length === 0 && (
+              <tr><td colSpan={9} className="px-3 py-6 text-center text-gray-500">No addresses</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+
 
 function CreateAccountPage() {
   const nav = useNavigate();
