@@ -145,6 +145,8 @@ export default function App() {
           <Route path="/all-users" element={<ProtectedRoute><AllUsers /></ProtectedRoute>} />
           <Route path="/admin/organizations" element={<ProtectedRoute><AllOrganizations /></ProtectedRoute>} />
           <Route path="/address-book" element={<ProtectedRoute><AddressBook /></ProtectedRoute>} />
+          <Route path="/" element={<ProtectedRoute><DashboardHome /></ProtectedRoute>} />
+
 
 
           <Route
