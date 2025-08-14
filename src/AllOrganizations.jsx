@@ -62,7 +62,7 @@ function TextInput({ label, ...props }) {
  *  Editor-modal för create/update
  * ------------------------------------------------------*/
 function OrgEditor({ open, onClose, onSave, initial }) {
-  const [form, setForm] = React.useState(
+  const [form, setForm] = useState(
     initial || {
       company_name: "",
       vat_number: "",
@@ -74,10 +74,10 @@ function OrgEditor({ open, onClose, onSave, initial }) {
       currency: "EUR",
     }
   );
-  const [saving, setSaving] = React.useState(false);
-  const [err, setErr] = React.useState("");
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (initial) setForm(initial);
   }, [initial]);
 
@@ -183,15 +183,15 @@ function OrgEditor({ open, onClose, onSave, initial }) {
  *  Huvudlista
  * ------------------------------------------------------*/
 export default function AllOrganizations() {
-  const [items, setItems] = React.useState([]);
-  const [total, setTotal] = React.useState(0);
-  const [page, setPage] = React.useState(1);
-  const [pageSize, setPageSize] = React.useState(25);
-  const [q, setQ] = React.useState("");
-  const [loading, setLoading] = React.useState(false);
-  const [err, setErr] = React.useState("");
-  const [editorOpen, setEditorOpen] = React.useState(false);
-  const [editRow, setEditRow] = React.useState(null);
+  const [items, setItems] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [q, setQ] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editRow, setEditRow] = useState(null);
 
   async function load() {
     setErr("");
@@ -210,7 +210,7 @@ export default function AllOrganizations() {
     }
   }
 
-  React.useEffect(() => {
+  useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q, page, pageSize]);
