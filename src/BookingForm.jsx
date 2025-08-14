@@ -2,54 +2,38 @@
 import { useState, useEffect, useCallback } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 
-const [addrbook, setAddrbook] = useState({ sender: [], receiver: [] });
-
-useEffect(() => {
-  (async () => {
-    try {
-      const all = await authedFetch("/addresses"); // alla typer
-      setAddrbook({
-        sender: all.filter(a => !a.type || a.type === "sender"),
-        receiver: all.filter(a => !a.type || a.type === "receiver"),
-      });
-    } catch (e) {
-      console.warn("Could not load address book:", e.message);
-    }
-  })();
-}, []);
-
-
-// ---- Auth helpers ----
+/* ==== API helpers (lokala till denna fil) ==== */
 const API = "https://easyfreightbooking-api.onrender.com";
 const getToken = () => localStorage.getItem("jwt") || "";
-
-function applyToPickup(a){
-  setPickup(p => ({
-    ...p,
-    business_name: a.business_name || "",
-    address: a.address || "",
-    city: a.city || "",
-    contact_name: a.contact_name || "",
-    phone: a.phone || "",
-    email: a.email || "",
-    opening_hours: a.opening_hours || "",
-    instructions: a.instructions || "",
-  }));
-}
-function applyToDelivery(a){
-  setDelivery(p => ({
-    ...p,
-    business_name: a.business_name || "",
-    address: a.address || "",
-    city: a.city || "",
-    contact_name: a.contact_name || "",
-    phone: a.phone || "",
-    email: a.email || "",
-    opening_hours: a.opening_hours || "",
-    instructions: a.instructions || "",
-  }));
+const authHeaders = () => ({
+  "Content-Type": "application/json",
+  Authorization: "Bearer " + getToken(),
+});
+async function authedFetch(path, opts = {}) {
+  const res = await fetch(`${API}${path}`, {
+    ...opts,
+    headers: { ...authHeaders(), ...(opts.headers || {}) },
+  });
+  const txt = await res.text();
+  let body = null;
+  try {
+    body = txt ? JSON.parse(txt) : null;
+  } catch {}
+  if (!res.ok) throw new Error(body?.error || txt || `HTTP ${res.status}`);
+  return body;
 }
 
+/* ==== Små presentational-komponenter ==== */
+function InfoItem({ label, value, emphasize = false }) {
+  return (
+    <div className="flex flex-col">
+      <span className="text-xs uppercase tracking-wide text-gray-500">{label}</span>
+      <span className={`mt-0.5 ${emphasize ? "font-semibold text-emerald-700" : "text-gray-900"}`}>
+        {value || "—"}
+      </span>
+    </div>
+  );
+}
 
 function SummaryHeader({ search, option }) {
   return (
@@ -66,16 +50,14 @@ function SummaryHeader({ search, option }) {
         </div>
         <div className="text-right">
           <div className="text-2xl font-semibold text-gray-900">
-            {option.total_price_eur}{" "}
-            <span className="text-base font-normal text-gray-500">EUR</span>
+            {option.total_price_eur} <span className="text-base font-normal text-gray-500">EUR</span>
           </div>
           <div className="text-xs text-gray-500">excl. VAT</div>
         </div>
       </div>
 
-      {/* Översta raden */}
       <div className="mt-4 border-t pt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
-        <InfoItem label="Selected product" value={option.mode.replace("_", " ")} />
+        <InfoItem label="Selected product" value={option.mode.replaceAll("_", " ")} />
         <InfoItem label="Earliest pickup" value={option.earliest_pickup_date} />
         <InfoItem
           label="Transit"
@@ -85,47 +67,24 @@ function SummaryHeader({ search, option }) {
               : option.transit_time_days
           }
         />
-        <InfoItem
-          label="CO₂ (est.)"
-          value={`${(option.co2_emissions_grams / 1000).toFixed(1)} kg`}
-        />
+        <InfoItem label="CO₂ (est.)" value={`${(option.co2_emissions_grams / 1000).toFixed(1)} kg`} />
       </div>
 
-      {/* Andra raden */}
       <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
         <InfoItem
           label="Quantity"
-          value={String(
-            search.goods?.reduce((a, g) => a + (Number(g.quantity) || 0), 0) || 1
-          )}
+          value={String((search.goods ?? []).reduce((a, g) => a + (Number(g.quantity) || 0), 0) || 1)}
         />
         <InfoItem
           label="Total weight"
           value={`${Math.round(
-            search.goods?.reduce(
-              (a, g) => a + (Number(g.weight) || 0) * (Number(g.quantity) || 1),
-              0
-            ) || 0
+            (search.goods ?? []).reduce((a, g) => a + (Number(g.weight) || 0) * (Number(g.quantity) || 1), 0)
           )} kg`}
         />
-        <InfoItem
-          label="Chargeable weight"
-          value={`${Math.round(search.chargeableWeight)} kg`}
-        />
-        <div /> {/* filler */}
+        <InfoItem label="Chargeable weight" value={`${Math.round(search.chargeableWeight)} kg`} />
+        <div />
       </div>
     </section>
-  );
-}
-
-function InfoItem({ label, value, emphasize = false }) {
-  return (
-    <div className="flex flex-col">
-      <span className="text-xs uppercase tracking-wide text-gray-500">{label}</span>
-      <span className={`mt-0.5 ${emphasize ? "font-semibold text-emerald-700" : "text-gray-900"}`}>
-        {value || "—"}
-      </span>
-    </div>
   );
 }
 
@@ -138,33 +97,39 @@ function AddressSection({
   schedule,
   onScheduleChange,
   scheduleLabel,
+  addrOptions = [],           // <— NYTT: adressbok skickas in
+  onPickFromBook,            // <— NYTT: callback när man väljer
 }) {
   return (
     <div className="bg-white border rounded-lg p-4 shadow-sm">
       <h3 className="text-lg font-semibold mb-3">{title}</h3>
 
-      <div className="mb-2">
-  <label className="text-sm text-gray-600 mr-2">Pick from address book:</label>
-  <select className="border rounded p-1"
-          onChange={(e)=>{
-            const a = addrbook.sender.find(x => x.id === e.target.value);
-            if (a) applyToPickup(a);
-          }}>
-    <option value="">— Select —</option>
-    {addrbook.sender.map(a => (
-      <option key={a.id} value={a.id}>
-        {(a.label || a.business_name || a.address || "Address")} • {a.country_code}-{a.postal_code} {a.city}
-      </option>
-    ))}
-  </select>
-</div>
+      {addrOptions.length > 0 && onPickFromBook && (
+        <div className="mb-2">
+          <label className="text-sm text-gray-600 mr-2">Pick from address book:</label>
+          <select
+            className="border rounded p-1"
+            onChange={(e) => {
+              const id = Number(e.target.value || 0);
+              const a = addrOptions.find((x) => x.id === id);
+              if (a) onPickFromBook(a);
+            }}
+          >
+            <option value="">— Select —</option>
+            {addrOptions.map((a) => (
+              <option key={a.id} value={a.id}>
+                {(a.label || a.business_name || a.address || "Address")} • {a.country_code}-{a.postal_code} {a.city}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700">Country</label>
           <input className="mt-1 w-full border rounded p-2 bg-gray-50 text-gray-700" value={lockedCountry} disabled />
         </div>
-
         <div>
           <label className="block text-sm font-medium text-gray-700">Postal code</label>
           <input className="mt-1 w-full border rounded p-2 bg-gray-50 text-gray-700" value={lockedPostal} disabled />
@@ -262,7 +227,6 @@ function AddressSection({
           />
         </div>
 
-        {/* Scheduling (optional) */}
         {schedule && onScheduleChange && (
           <div className="md:col-span-2 mt-4 border-t pt-3">
             <label className={`block text-sm font-medium text-gray-700 ${schedule.asap ? "opacity-50" : ""}`}>
@@ -276,7 +240,6 @@ function AddressSection({
               onChange={(e) => onScheduleChange({ ...schedule, date: e.target.value })}
               min={new Date().toISOString().slice(0, 10)}
             />
-
             <label className="inline-flex items-center gap-2 mt-3">
               <input
                 type="checkbox"
@@ -292,13 +255,29 @@ function AddressSection({
   );
 }
 
+/* ==== Huvudkomponent ==== */
 export default function BookingForm() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Adressbok
+  const [addrbook, setAddrbook] = useState({ sender: [], receiver: [] });
+  useEffect(() => {
+    (async () => {
+      try {
+        const all = await authedFetch("/addresses");
+        setAddrbook({
+          sender: all.filter((a) => !a.type || a.type === "sender"),
+          receiver: all.filter((a) => !a.type || a.type === "receiver"),
+        });
+      } catch (e) {
+        console.warn("Could not load address book:", e.message);
+      }
+    })();
+  }, []);
+
   const [pickupSchedule, setPickupSchedule] = useState({ asap: true, date: "" });
   const [deliverySchedule, setDeliverySchedule] = useState({ asap: true, date: "" });
-
   const [approvals, setApprovals] = useState({ terms: false, gdpr: false });
 
   const loggedInUser = location.state?.user ?? { name: "", phone: "", email: "" };
@@ -307,7 +286,7 @@ export default function BookingForm() {
   const [updateContact, setUpdateContact] = useState({
     name: loggedInUser.name,
     phone: loggedInUser.phone,
-    email: loggedInUser.email
+    email: loggedInUser.email,
   });
 
   const search = location.state?.search ?? {
@@ -363,6 +342,33 @@ export default function BookingForm() {
     0
   );
 
+  // helpers för att applicera adressboksposter
+  const applyToPickup = (a) =>
+    setPickup((p) => ({
+      ...p,
+      business_name: a.business_name || "",
+      address: a.address || "",
+      city: a.city || "",
+      contact_name: a.contact_name || "",
+      phone: a.phone || "",
+      email: a.email || "",
+      opening_hours: a.opening_hours || "",
+      instructions: a.instructions || "",
+    }));
+
+  const applyToDelivery = (a) =>
+    setDelivery((p) => ({
+      ...p,
+      business_name: a.business_name || "",
+      address: a.address || "",
+      city: a.city || "",
+      contact_name: a.contact_name || "",
+      phone: a.phone || "",
+      email: a.email || "",
+      opening_hours: a.opening_hours || "",
+      instructions: a.instructions || "",
+    }));
+
   async function handleSubmit() {
     if (!approvals.terms || !approvals.gdpr) {
       alert("Please approve Terms and Conditions and GDPR processing before booking.");
@@ -385,43 +391,25 @@ export default function BookingForm() {
       return;
     }
 
-    // very light required fields check
-    const required = [
-      pickup.business_name, pickup.address, pickup.city,
-      delivery.business_name, delivery.address, delivery.city,
-      pickup.phone, delivery.phone, pickup.email, delivery.email,
-    ];
-    if (required.some((v) => !String(v).trim())) {
-      alert("Please fill in required address and contact fields for pickup and delivery.");
-      return;
-    }
-
     const payload = {
       selected_mode: option.mode,
       price_eur: option.total_price_eur,
       earliest_pickup: option.earliest_pickup_date,
       transit_time_days: option.transit_time_days,
       co2_emissions_grams: option.co2_emissions_grams,
-
       pickup: { country: search.pickup_country, postal: search.pickup_postal, ...pickup },
       delivery: { country: search.delivery_country, postal: search.delivery_postal, ...delivery },
-
       goods: search.goods,
       references: refs,
       addons,
       booker,
       update_contact: updateContact,
-
-      // You can omit user_id; backend falls back to JWT, but keeping doesn't hurt
-      //user_id: String(userId),
-
       asap_pickup: pickupSchedule.asap,
       requested_pickup_date: pickupSchedule.asap ? null : pickupSchedule.date,
       asap_delivery: deliverySchedule.asap,
       requested_delivery_date: deliverySchedule.asap ? null : deliverySchedule.date,
     };
 
-    // ---- SEND WITH JWT ----
     const token = getToken();
     if (!token) {
       alert("You are not logged in. Please log in again.");
@@ -431,16 +419,11 @@ export default function BookingForm() {
     try {
       const res = await fetch(`${API}/book`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload),
       });
-
-      const text = await res.text(); // helpful even when it's JSON
+      const text = await res.text();
       if (!res.ok) {
-        console.error("BOOK failed:", text);
         try {
           const j = JSON.parse(text);
           throw new Error(j.error || text);
@@ -448,7 +431,6 @@ export default function BookingForm() {
           throw new Error(text);
         }
       }
-
       alert("✅ Booking sent. You'll receive a confirmation email shortly.");
       navigate("/dashboard");
     } catch (err) {
@@ -467,12 +449,10 @@ export default function BookingForm() {
 
       <h1 className="text-2xl font-bold mb-4">📦 Finalize booking</h1>
 
-      {/* Summary */}
       <div className="mb-6">
         <SummaryHeader search={search} option={option} />
       </div>
 
-      {/* Address sections */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <AddressSection
           title="Pickup address"
@@ -483,8 +463,9 @@ export default function BookingForm() {
           schedule={pickupSchedule}
           onScheduleChange={setPickupSchedule}
           scheduleLabel="Requested pickup date"
+          addrOptions={addrbook.sender}
+          onPickFromBook={applyToPickup}
         />
-
         <AddressSection
           title="Delivery address"
           value={delivery}
@@ -494,10 +475,11 @@ export default function BookingForm() {
           schedule={deliverySchedule}
           onScheduleChange={setDeliverySchedule}
           scheduleLabel="Requested delivery date"
+          addrOptions={addrbook.receiver}
+          onPickFromBook={applyToDelivery}
         />
       </div>
 
-      {/* References & add-ons */}
       <div className="bg-white border rounded-lg p-4 shadow-sm mb-6">
         <h3 className="text-lg font-semibold mb-3">References & add-ons</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -546,50 +528,8 @@ export default function BookingForm() {
         </div>
       </div>
 
-      {/* Contact for transport updates */}
-      <div className="bg-white border rounded-lg p-4 shadow-sm mb-6">
-        <h3 className="text-lg font-semibold mb-3">Contact for transport updates</h3>
-        <p className="text-sm text-gray-500 mb-4">
-          Specify who should receive notifications about this shipment. This can be you or someone else.
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Name</label>
-            <input
-              className="mt-1 w-full border rounded p-2"
-              value={updateContact.name}
-              onChange={(e) => setUpdateContact({ ...updateContact, name: e.target.value })}
-              placeholder="Full name"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Phone</label>
-            <input
-              className="mt-1 w-full border rounded p-2"
-              value={updateContact.phone}
-              onChange={(e) => setUpdateContact({ ...updateContact, phone: e.target.value })}
-              placeholder="+46 ..."
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Email</label>
-            <input
-              type="email"
-              className="mt-1 w-full border rounded p-2"
-              value={updateContact.email}
-              onChange={(e) => setUpdateContact({ ...updateContact, email: e.target.value })}
-              placeholder="email@example.com"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Submit */}
       <div className="flex flex-wrap items-center gap-4">
-        <button
-          onClick={() => navigate(-1)}
-          className="px-4 py-2 rounded border bg-white hover:bg-gray-50"
-        >
+        <button onClick={() => navigate(-1)} className="px-4 py-2 rounded border bg-white hover:bg-gray-50">
           ← Back
         </button>
 
@@ -597,9 +537,7 @@ export default function BookingForm() {
           onClick={handleSubmit}
           disabled={!approvals.terms || !approvals.gdpr}
           className={`px-5 py-2 rounded text-white font-medium shadow ${
-            !approvals.terms || !approvals.gdpr
-              ? "bg-gray-400 cursor-not-allowed"
-              : "bg-green-600 hover:bg-green-700"
+            !approvals.terms || !approvals.gdpr ? "bg-gray-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"
           }`}
         >
           ✅ Confirm booking
