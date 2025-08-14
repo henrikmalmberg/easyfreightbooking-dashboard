@@ -1,10 +1,11 @@
+// src/main.jsx
 import React from "react";
 import { createRoot } from "react-dom/client";
-import Dashboard from "./Dashboard.jsx"; // case och namn måste matcha exakt
 import "./index.css";
+import Dashboard from "./Dashboard.jsx";
 
-
-createRoot(document.getElementById("root")).render(
+const rootEl = document.getElementById("root");
+createRoot(rootEl).render(
   <React.StrictMode>
     <Dashboard />
   </React.StrictMode>
