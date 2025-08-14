@@ -2,9 +2,54 @@
 import React from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 
+const [addrbook, setAddrbook] = React.useState({ sender: [], receiver: [] });
+
+React.useEffect(() => {
+  (async () => {
+    try {
+      const all = await authedFetch("/addresses"); // alla typer
+      setAddrbook({
+        sender: all.filter(a => !a.type || a.type === "sender"),
+        receiver: all.filter(a => !a.type || a.type === "receiver"),
+      });
+    } catch (e) {
+      console.warn("Could not load address book:", e.message);
+    }
+  })();
+}, []);
+
+
 // ---- Auth helpers ----
 const API = "https://easyfreightbooking-api.onrender.com";
 const getToken = () => localStorage.getItem("jwt") || "";
+
+function applyToPickup(a){
+  setPickup(p => ({
+    ...p,
+    business_name: a.business_name || "",
+    address: a.address || "",
+    city: a.city || "",
+    contact_name: a.contact_name || "",
+    phone: a.phone || "",
+    email: a.email || "",
+    opening_hours: a.opening_hours || "",
+    instructions: a.instructions || "",
+  }));
+}
+function applyToDelivery(a){
+  setDelivery(p => ({
+    ...p,
+    business_name: a.business_name || "",
+    address: a.address || "",
+    city: a.city || "",
+    contact_name: a.contact_name || "",
+    phone: a.phone || "",
+    email: a.email || "",
+    opening_hours: a.opening_hours || "",
+    instructions: a.instructions || "",
+  }));
+}
+
 
 function SummaryHeader({ search, option }) {
   return (
@@ -97,6 +142,22 @@ function AddressSection({
   return (
     <div className="bg-white border rounded-lg p-4 shadow-sm">
       <h3 className="text-lg font-semibold mb-3">{title}</h3>
+
+      <div className="mb-2">
+  <label className="text-sm text-gray-600 mr-2">Pick from address book:</label>
+  <select className="border rounded p-1"
+          onChange={(e)=>{
+            const a = addrbook.sender.find(x => x.id === e.target.value);
+            if (a) applyToPickup(a);
+          }}>
+    <option value="">— Select —</option>
+    {addrbook.sender.map(a => (
+      <option key={a.id} value={a.id}>
+        {(a.label || a.business_name || a.address || "Address")} • {a.country_code}-{a.postal_code} {a.city}
+      </option>
+    ))}
+  </select>
+</div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
