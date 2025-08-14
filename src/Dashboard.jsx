@@ -11,6 +11,10 @@ import BookingForm from "./BookingForm";
 import AllUsers from "./AllUsers";
 import AllOrganizations from "./AllOrganizations";
 
+export default function Dashboard() {
+  return <div>App up ✅</div>;
+}
+
 
 /* =========================================================
    API + Auth helpers
