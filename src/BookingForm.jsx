@@ -2,9 +2,9 @@
 import React from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 
-const [addrbook, setAddrbook] = React.useState({ sender: [], receiver: [] });
+const [addrbook, setAddrbook] = useState({ sender: [], receiver: [] });
 
-React.useEffect(() => {
+useEffect(() => {
   (async () => {
     try {
       const all = await authedFetch("/addresses"); // alla typer
@@ -296,15 +296,15 @@ export default function BookingForm() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [pickupSchedule, setPickupSchedule] = React.useState({ asap: true, date: "" });
-  const [deliverySchedule, setDeliverySchedule] = React.useState({ asap: true, date: "" });
+  const [pickupSchedule, setPickupSchedule] = useState({ asap: true, date: "" });
+  const [deliverySchedule, setDeliverySchedule] = useState({ asap: true, date: "" });
 
-  const [approvals, setApprovals] = React.useState({ terms: false, gdpr: false });
+  const [approvals, setApprovals] = useState({ terms: false, gdpr: false });
 
   const loggedInUser = location.state?.user ?? { name: "", phone: "", email: "" };
   const booker = { name: loggedInUser.name, email: loggedInUser.email, phone: loggedInUser.phone };
 
-  const [updateContact, setUpdateContact] = React.useState({
+  const [updateContact, setUpdateContact] = useState({
     name: loggedInUser.name,
     phone: loggedInUser.phone,
     email: loggedInUser.email
@@ -330,7 +330,7 @@ export default function BookingForm() {
     description: "Road freight option",
   };
 
-  const [pickup, setPickup] = React.useState({
+  const [pickup, setPickup] = useState({
     city: search.pickup_city || "",
     business_name: "",
     address: "",
@@ -342,7 +342,7 @@ export default function BookingForm() {
     instructions: "",
   });
 
-  const [delivery, setDelivery] = React.useState({
+  const [delivery, setDelivery] = useState({
     city: search.delivery_city || "",
     business_name: "",
     address: "",
@@ -354,8 +354,8 @@ export default function BookingForm() {
     instructions: "",
   });
 
-  const [refs, setRefs] = React.useState({ reference1: "", reference2: "" });
-  const [addons, setAddons] = React.useState({ tail_lift: false, pre_notice: false });
+  const [refs, setRefs] = useState({ reference1: "", reference2: "" });
+  const [addons, setAddons] = useState({ tail_lift: false, pre_notice: false });
 
   const chargeableWeight = Number(search.chargeableWeight ?? 0);
   const totalWeight = (search.goods ?? []).reduce(
