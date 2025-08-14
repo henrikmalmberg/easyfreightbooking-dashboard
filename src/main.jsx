@@ -1,4 +1,10 @@
 import React from "react";
+
+if (typeof window !== "undefined") {
+  window.React = window.React || React;
+
+}
+
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import ErrorBoundary from "./ErrorBoundary.jsx";
