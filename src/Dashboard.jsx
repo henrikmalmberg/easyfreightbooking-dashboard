@@ -11,8 +11,42 @@ import BookingForm from "./BookingForm";
 import AllUsers from "./AllUsers";
 import AllOrganizations from "./AllOrganizations";
 
-export default function Dashboard() {
+// Valfri liten startsida (named export)
+function DashboardHome() {
   return <div>App up ✅</div>;
+}
+
+/* =========================================================
+   App + Routes
+========================================================= */
+export default function App() {
+  return (
+    <Router>
+      <Layout>
+        <Routes>
+          {/* Public */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/create-account" element={<CreateAccountPage />} />
+
+          {/* Protected */}
+          <Route path="/" element={<ProtectedRoute><DashboardHome /></ProtectedRoute>} />
+          <Route path="/dashboard" element={<ProtectedRoute><Welcome /></ProtectedRoute>} />
+          <Route path="/new-booking" element={<ProtectedRoute><NewBooking /></ProtectedRoute>} />
+          <Route path="/confirm" element={<ProtectedRoute><BookingForm /></ProtectedRoute>} />
+          <Route path="/view-bookings" element={<ProtectedRoute><ViewBookings /></ProtectedRoute>} />
+          <Route path="/account" element={<ProtectedRoute><MyAccount /></ProtectedRoute>} />
+          <Route path="/all-users" element={<ProtectedRoute><AllUsers /></ProtectedRoute>} />
+          <Route path="/admin/organizations" element={<ProtectedRoute><AllOrganizations /></ProtectedRoute>} />
+
+          <Route path="/admin/pricing" element={<ProtectedRoute><AdminPricing /></ProtectedRoute>} />
+          <Route path="/admin/bookings" element={<ProtectedRoute><AdminAllBookings /></ProtectedRoute>} />
+
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to={getToken() ? "/dashboard" : "/login"} replace />} />
+        </Routes>
+      </Layout>
+    </Router>
+  );
 }
 
 
