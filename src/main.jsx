@@ -1,7 +1,7 @@
 // src/main.jsx
 import React from "react";
 import ReactDOM from "react-dom/client";
-import Dashboard from "./dashboard.jsx";
+import Dashboard from "./Dashboard.jsx";
 
 // 👇 TEMP: logga alla fel så vi ser dem i Console även i prod
 console.log("🟢 main.jsx loaded");
