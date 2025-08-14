@@ -1,10 +1,28 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Easy Freight Booking Dashboard</title>
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Easy Freight Dashboard</title>
+    <!-- React shim för bråkiga extensions (körs innan allt annat) -->
+    <script>
+      (function () {
+        const w = window;
+        // Skapa en tom React-namespace om ingen finns
+        w.React = w.React || {};
+        const R = w.React;
+
+        // No-op hooks/funcs så att extensions inte kraschar sidan
+        const noop = function(){};
+        R.useState    = R.useState    || (init => [init, noop]);
+        R.useEffect   = R.useEffect   || noop;
+        R.useRef      = R.useRef      || (() => ({ current: null }));
+        R.useMemo     = R.useMemo     || (fn => fn());
+        R.useCallback = R.useCallback || (fn => fn);
+        R.createElement = R.createElement || noop; // vissa script kollar denna också
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
