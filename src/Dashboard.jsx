@@ -1652,6 +1652,17 @@ const pickFromBookFrom = (id) => {
   }));
 };
 
+const pickFromBookTo = (id) => {
+  const a = addrbook.receiver.find(x => x.id === Number(id));
+  if (!a) return;
+  setForm(p => ({
+    ...p,
+    delivery_country: (a.country_code || p.delivery_country || "").toUpperCase(),
+    delivery_postal: (a.postal_code || "").trim(),
+  }));
+};
+
+  
   const calculateChargeableWeight = (goods) => goods.reduce((total, item) => {
     const weight = parseFloat(item.weight) || 0;
     const length = (parseFloat(item.length) || 0) / 100;
