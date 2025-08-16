@@ -351,60 +351,110 @@ function LoginPage() {
 
 function AddressBook() {
   const [rows, setRows] = useState([]);
+  const [drafts, setDrafts] = useState({});   // id -> utkast (lokala ändringar)
+  const [saving, setSaving] = useState({});   // id -> true/false
   const [msg, setMsg] = useState("");
 
   const load = useCallback(async () => {
-    try { setRows(await authedFetch("/addresses")); }
+    try { setRows(await authedFetch("/addresses")); setMsg(""); }
     catch (e) { setMsg(`❌ ${e.message}`); }
   }, []);
   useEffect(() => { load(); }, [load]);
 
-  async function saveRow(id, patch) {
+  const startEdit = (id) => {
+    setDrafts((d) => (d[id] ? d : { ...d, [id]: { ...rows.find(r => r.id === id) } }));
+  };
+
+  const onField = (id, key, value) => {
+    setDrafts((d) => ({ ...d, [id]: { ...(d[id] || {}), [key]: value } }));
+  };
+
+  const isDirty = (id) => {
+    const r = rows.find((x) => x.id === id);
+    const d = drafts[id];
+    if (!r || !d) return false;
+    return Object.keys(d).some((k) => (d[k] ?? "") !== (r[k] ?? ""));
+  };
+
+  async function saveRow(id) {
+    if (!isDirty(id)) return;
+    setSaving((s) => ({ ...s, [id]: true }));
     setMsg("");
     try {
-      await authedFetch(`/addresses/${id}`, { method: "PUT", body: JSON.stringify(patch) });
-      // optimistisk uppdatering i UI
-      setRows(prev => prev.map(r => (r.id === id ? { ...r, ...patch } : r)));
+      const r = rows.find((x) => x.id === id);
+      const d = drafts[id];
+      // skapa minimal patch
+      const patch = {};
+      Object.keys(d).forEach((k) => {
+        const v = d[k];
+        if ((v ?? "") !== (r[k] ?? "")) patch[k] = v;
+      });
+      // normalisering
+      if (patch.country_code) patch.country_code = patch.country_code.toUpperCase().replace("UK", "GB");
+      const updated = await authedFetch(`/addresses/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(patch),
+      });
+      // uppdatera i listan
+      setRows((prev) => prev.map((x) => (x.id === id ? { ...x, ...updated } : x)));
+      // rensa draft
+      setDrafts((d) => {
+        const { [id]: _omit, ...rest } = d;
+        return rest;
+      });
       setMsg("✅ Saved");
-    } catch (e) { setMsg(`❌ ${e.message}`); }
+    } catch (e) {
+      setMsg(`❌ ${e.message}`);
+    } finally {
+      setSaving((s) => ({ ...s, [id]: false }));
+    }
+  }
+
+  function revertRow(id) {
+    setDrafts((d) => {
+      const { [id]: _omit, ...rest } = d;
+      return rest;
+    });
   }
 
   async function createRow() {
     setMsg("");
     try {
       const blank = {
-        label: "",
-        business_name: "",
-        address: "",
-        address2: "",
-        city: "",
-        country_code: "",
-        postal_code: "",
-        contact_name: "",
-        phone: "",
-        email: "",
-        opening_hours: "",
-        instructions: ""
+        label: "", business_name: "", address: "", address2: "",
+        city: "", country_code: "", postal_code: "",
+        contact_name: "", phone: "", email: "",
+        opening_hours: "", instructions: ""
       };
-      const created = await authedFetch("/addresses", { method: "POST", body: JSON.stringify(blank) });
-      setRows(prev => [...prev, created]);
-    } catch (e) { setMsg(`❌ ${e.message}`); }
+      const created = await authedFetch("/addresses", {
+        method: "POST",
+        body: JSON.stringify(blank),
+      });
+      setRows((prev) => [...prev, created]);
+      // öppna i edit mode direkt
+      setDrafts((d) => ({ ...d, [created.id]: { ...created } }));
+    } catch (e) {
+      setMsg(`❌ ${e.message}`);
+    }
   }
 
   async function removeRow(id) {
-    setMsg("");
     if (!window.confirm("Delete this address?")) return;
+    setMsg("");
     try {
       await authedFetch(`/addresses/${id}`, { method: "DELETE" });
-      setRows(prev => prev.filter(r => r.id !== id));
+      setRows((prev) => prev.filter((r) => r.id !== id));
+      revertRow(id);
     } catch (e) { setMsg(`❌ ${e.message}`); }
   }
+
+  const V = (r, key) => (drafts[r.id]?.[key] ?? r[key] ?? "");
 
   return (
     <div>
       <h1 className="text-3xl font-bold mb-4">🏷️ Address Book</h1>
       <div className="mb-2 text-sm text-gray-600">Addresses shared within your organization.</div>
-      <div className="mb-3 flex gap-2">
+      <div className="mb-3 flex gap-2 items-center">
         <button onClick={createRow} className="px-3 py-1.5 rounded bg-blue-600 text-white">+ New address</button>
         {msg && <div className="text-sm">{msg}</div>}
       </div>
@@ -425,84 +475,67 @@ function AddressBook() {
               <th className="px-3 py-2 w-56">Email</th>
               <th className="px-3 py-2 w-48">Opening hours</th>
               <th className="px-3 py-2 w-[260px]">Instructions</th>
-              <th className="px-3 py-2 w-24"></th>
+              <th className="px-3 py-2 w-44 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map(r => (
-              <tr key={r.id} className="border-t align-top">
-                <td className="px-3 py-1">
-                  <input className="border rounded p-1 w-full"
-                         defaultValue={r.label || ""}
-                         onBlur={e => saveRow(r.id, { label: e.target.value })}/>
-                </td>
-                <td className="px-3 py-1">
-                  <input className="border rounded p-1 w-full"
-                         defaultValue={r.business_name || ""}
-                         onBlur={e => saveRow(r.id, { business_name: e.target.value })}/>
-                </td>
-                <td className="px-3 py-1">
-                  <input className="border rounded p-1 w-full"
-                         defaultValue={r.address || ""}
-                         onBlur={e => saveRow(r.id, { address: e.target.value })}/>
-                </td>
-                <td className="px-3 py-1">
-                  <input className="border rounded p-1 w-full"
-                         defaultValue={r.address2 || ""}
-                         onBlur={e => saveRow(r.id, { address2: e.target.value })}/>
-                </td>
-                <td className="px-3 py-1">
-                  <input className="border rounded p-1 w-full"
-                         defaultValue={r.city || ""}
-                         onBlur={e => saveRow(r.id, { city: e.target.value })}/>
-                </td>
-                <td className="px-3 py-1">
-                  <input className="border rounded p-1 w-full" maxLength={2}
-                         defaultValue={r.country_code || ""}
-                         onBlur={e => saveRow(r.id, { country_code: e.target.value.toUpperCase().replace("UK","GB") })}/>
-                </td>
-                <td className="px-3 py-1">
-                  <input className="border rounded p-1 w-full"
-                         defaultValue={r.postal_code || ""}
-                         onBlur={e => saveRow(r.id, { postal_code: e.target.value })}/>
-                </td>
-                <td className="px-3 py-1">
-                  <input className="border rounded p-1 w-full"
-                         defaultValue={r.contact_name || ""}
-                         onBlur={e => saveRow(r.id, { contact_name: e.target.value })}/>
-                </td>
-                <td className="px-3 py-1">
-                  <input className="border rounded p-1 w-full"
-                         defaultValue={r.phone || ""}
-                         onBlur={e => saveRow(r.id, { phone: e.target.value })}/>
-                </td>
-                <td className="px-3 py-1">
-                  <input type="email" className="border rounded p-1 w-full"
-                         defaultValue={r.email || ""}
-                         onBlur={e => saveRow(r.id, { email: e.target.value })}/>
-                </td>
-                <td className="px-3 py-1">
-                  <input className="border rounded p-1 w-full" placeholder="Mon–Fri 08:00–16:00"
-                         defaultValue={r.opening_hours || ""}
-                         onBlur={e => saveRow(r.id, { opening_hours: e.target.value })}/>
-                </td>
-                <td className="px-3 py-1">
-                  <textarea className="border rounded p-1 w-full h-10"
-                            defaultValue={r.instructions || ""}
-                            onBlur={e => saveRow(r.id, { instructions: e.target.value })}/>
-                </td>
-                <td className="px-3 py-1 text-right">
-                  <button onClick={() => removeRow(r.id)}
-                          className="px-2 py-1 rounded border hover:bg-gray-50">
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {rows.map((r) => {
+              const dirty = isDirty(r.id);
+              return (
+                <tr key={r.id} className={`border-t ${dirty ? "bg-amber-50" : ""}`} onFocus={() => startEdit(r.id)}>
+                  {[
+                    ["label","w-full"],["business_name","w-full"],["address","w-full"],["address2","w-full"],
+                    ["city","w-full"],["country_code","w-16"],["postal_code","w-full"],
+                    ["contact_name","w-full"],["phone","w-full"],["email","w-full"],
+                    ["opening_hours","w-full"],["instructions","w-full textarea"],
+                  ].map(([key, w], i) => (
+                    <td key={key} className="px-3 py-1 align-top">
+                      {key === "instructions" ? (
+                        <textarea
+                          className={`border rounded p-1 ${w} h-10`}
+                          value={V(r,key)}
+                          onChange={(e) => onField(r.id, key, e.target.value)}
+                        />
+                      ) : (
+                        <input
+                          className={`border rounded p-1 ${w}`}
+                          value={V(r,key)}
+                          onChange={(e) => onField(r.id, key, e.target.value)}
+                          maxLength={key === "country_code" ? 2 : undefined}
+                        />
+                      )}
+                    </td>
+                  ))}
+
+                  <td className="px-3 py-1 text-right whitespace-nowrap">
+                    <div className="inline-flex gap-1">
+                      <button
+                        onClick={() => saveRow(r.id)}
+                        disabled={!dirty || saving[r.id]}
+                        className={`px-2 py-1 rounded text-white ${dirty ? "bg-green-600 hover:bg-green-700" : "bg-gray-300 cursor-not-allowed"}`}
+                      >
+                        {saving[r.id] ? "Saving…" : "Save"}
+                      </button>
+                      <button
+                        onClick={() => revertRow(r.id)}
+                        disabled={!dirty}
+                        className={`px-2 py-1 rounded border ${dirty ? "hover:bg-gray-50" : "opacity-50 cursor-not-allowed"}`}
+                      >
+                        Revert
+                      </button>
+                      <button
+                        onClick={() => removeRow(r.id)}
+                        className="px-2 py-1 rounded border hover:bg-gray-50"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
             {rows.length === 0 && (
-              <tr>
-                <td colSpan={13} className="px-3 py-6 text-center text-gray-500">No addresses</td>
-              </tr>
+              <tr><td colSpan={13} className="px-3 py-6 text-center text-gray-500">No addresses</td></tr>
             )}
           </tbody>
         </table>
