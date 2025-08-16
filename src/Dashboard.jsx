@@ -357,16 +357,16 @@ function AddressBook() {
     try { setRows(await authedFetch("/addresses")); }
     catch (e) { setMsg(`❌ ${e.message}`); }
   }, []);
-
-  useEffect(()=>{ load(); }, [load]);
+  useEffect(() => { load(); }, [load]);
 
   async function saveRow(id, patch) {
     setMsg("");
     try {
-      await authedFetch(`/addresses/${id}`, { method:"PUT", body: JSON.stringify(patch) });
-      await load();
+      await authedFetch(`/addresses/${id}`, { method: "PUT", body: JSON.stringify(patch) });
+      // optimistisk uppdatering i UI
+      setRows(prev => prev.map(r => (r.id === id ? { ...r, ...patch } : r)));
       setMsg("✅ Saved");
-    } catch(e){ setMsg(`❌ ${e.message}`); }
+    } catch (e) { setMsg(`❌ ${e.message}`); }
   }
 
   async function createRow() {
@@ -374,21 +374,30 @@ function AddressBook() {
     try {
       const blank = {
         label: "",
-        type: null, // lämnas kvar för kompatibilitet med backend
-        business_name: "", address: "", postal_code: "", city: "",
-        country_code: "", contact_name: "", phone: "", email: "",
-        opening_hours: "", instructions: ""
+        business_name: "",
+        address: "",
+        address2: "",
+        city: "",
+        country_code: "",
+        postal_code: "",
+        contact_name: "",
+        phone: "",
+        email: "",
+        opening_hours: "",
+        instructions: ""
       };
-      await authedFetch("/addresses", { method:"POST", body: JSON.stringify(blank) });
-      await load();
-    } catch(e){ setMsg(`❌ ${e.message}`); }
+      const created = await authedFetch("/addresses", { method: "POST", body: JSON.stringify(blank) });
+      setRows(prev => [...prev, created]);
+    } catch (e) { setMsg(`❌ ${e.message}`); }
   }
 
   async function removeRow(id) {
     setMsg("");
     if (!window.confirm("Delete this address?")) return;
-    try { await authedFetch(`/addresses/${id}`, { method:"DELETE" }); await load(); }
-    catch(e){ setMsg(`❌ ${e.message}`); }
+    try {
+      await authedFetch(`/addresses/${id}`, { method: "DELETE" });
+      setRows(prev => prev.filter(r => r.id !== id));
+    } catch (e) { setMsg(`❌ ${e.message}`); }
   }
 
   return (
@@ -401,81 +410,90 @@ function AddressBook() {
       </div>
 
       <div className="bg-white border rounded-lg shadow-sm overflow-auto">
-        <table className="min-w-full text-sm">
+        <table className="min-w-[1200px] text-sm">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-3 py-2">Label</th>
-              {/* Type-kolumnen borttagen */}
-              <th className="px-3 py-2">Business</th>
-              <th className="px-3 py-2">Address</th>
-              <th className="px-3 py-2">City</th>
-              <th className="px-3 py-2">CC</th>
-              <th className="px-3 py-2">Postal</th>
-              <th className="px-3 py-2">Contact</th>
-              <th className="px-3 py-2 w-28"></th>
+              <th className="px-3 py-2 w-40">Label</th>
+              <th className="px-3 py-2 w-48">Business</th>
+              <th className="px-3 py-2 w-64">Address</th>
+              <th className="px-3 py-2 w-56">Address 2</th>
+              <th className="px-3 py-2 w-40">City</th>
+              <th className="px-3 py-2 w-16">CC</th>
+              <th className="px-3 py-2 w-24">Postal</th>
+              <th className="px-3 py-2 w-48">Contact name</th>
+              <th className="px-3 py-2 w-40">Phone</th>
+              <th className="px-3 py-2 w-56">Email</th>
+              <th className="px-3 py-2 w-48">Opening hours</th>
+              <th className="px-3 py-2 w-[260px]">Instructions</th>
+              <th className="px-3 py-2 w-24"></th>
             </tr>
           </thead>
           <tbody>
             {rows.map(r => (
-              <tr key={r.id} className="border-t">
+              <tr key={r.id} className="border-t align-top">
                 <td className="px-3 py-1">
-                  <input
-                    className="border rounded p-1 w-40"
-                    defaultValue={r.label || ""}
-                    onBlur={(e)=>saveRow(r.id, {label:e.target.value})}
-                  />
-                </td>
-
-                {/* Type-kolumnen borttagen */}
-
-                <td className="px-3 py-1">
-                  <input
-                    className="border rounded p-1 w-48"
-                    defaultValue={r.business_name || ""}
-                    onBlur={(e)=>saveRow(r.id, {business_name:e.target.value})}
-                  />
+                  <input className="border rounded p-1 w-full"
+                         defaultValue={r.label || ""}
+                         onBlur={e => saveRow(r.id, { label: e.target.value })}/>
                 </td>
                 <td className="px-3 py-1">
-                  <input
-                    className="border rounded p-1 w-64"
-                    defaultValue={r.address || ""}
-                    onBlur={(e)=>saveRow(r.id, {address:e.target.value})}
-                  />
+                  <input className="border rounded p-1 w-full"
+                         defaultValue={r.business_name || ""}
+                         onBlur={e => saveRow(r.id, { business_name: e.target.value })}/>
                 </td>
                 <td className="px-3 py-1">
-                  <input
-                    className="border rounded p-1 w-40"
-                    defaultValue={r.city || ""}
-                    onBlur={(e)=>saveRow(r.id, {city:e.target.value})}
-                  />
+                  <input className="border rounded p-1 w-full"
+                         defaultValue={r.address || ""}
+                         onBlur={e => saveRow(r.id, { address: e.target.value })}/>
                 </td>
                 <td className="px-3 py-1">
-                  <input
-                    className="border rounded p-1 w-16"
-                    maxLength={2}
-                    defaultValue={r.country_code || ""}
-                    onBlur={(e)=>saveRow(r.id, {country_code:e.target.value.toUpperCase()})}
-                  />
+                  <input className="border rounded p-1 w-full"
+                         defaultValue={r.address2 || ""}
+                         onBlur={e => saveRow(r.id, { address2: e.target.value })}/>
                 </td>
                 <td className="px-3 py-1">
-                  <input
-                    className="border rounded p-1 w-24"
-                    defaultValue={r.postal_code || ""}
-                    onBlur={(e)=>saveRow(r.id, {postal_code:e.target.value})}
-                  />
+                  <input className="border rounded p-1 w-full"
+                         defaultValue={r.city || ""}
+                         onBlur={e => saveRow(r.id, { city: e.target.value })}/>
                 </td>
                 <td className="px-3 py-1">
-                  <input
-                    className="border rounded p-1 w-48"
-                    defaultValue={r.contact_name || ""}
-                    onBlur={(e)=>saveRow(r.id, {contact_name:e.target.value})}
-                  />
+                  <input className="border rounded p-1 w-full" maxLength={2}
+                         defaultValue={r.country_code || ""}
+                         onBlur={e => saveRow(r.id, { country_code: e.target.value.toUpperCase().replace("UK","GB") })}/>
+                </td>
+                <td className="px-3 py-1">
+                  <input className="border rounded p-1 w-full"
+                         defaultValue={r.postal_code || ""}
+                         onBlur={e => saveRow(r.id, { postal_code: e.target.value })}/>
+                </td>
+                <td className="px-3 py-1">
+                  <input className="border rounded p-1 w-full"
+                         defaultValue={r.contact_name || ""}
+                         onBlur={e => saveRow(r.id, { contact_name: e.target.value })}/>
+                </td>
+                <td className="px-3 py-1">
+                  <input className="border rounded p-1 w-full"
+                         defaultValue={r.phone || ""}
+                         onBlur={e => saveRow(r.id, { phone: e.target.value })}/>
+                </td>
+                <td className="px-3 py-1">
+                  <input type="email" className="border rounded p-1 w-full"
+                         defaultValue={r.email || ""}
+                         onBlur={e => saveRow(r.id, { email: e.target.value })}/>
+                </td>
+                <td className="px-3 py-1">
+                  <input className="border rounded p-1 w-full" placeholder="Mon–Fri 08:00–16:00"
+                         defaultValue={r.opening_hours || ""}
+                         onBlur={e => saveRow(r.id, { opening_hours: e.target.value })}/>
+                </td>
+                <td className="px-3 py-1">
+                  <textarea className="border rounded p-1 w-full h-10"
+                            defaultValue={r.instructions || ""}
+                            onBlur={e => saveRow(r.id, { instructions: e.target.value })}/>
                 </td>
                 <td className="px-3 py-1 text-right">
-                  <button
-                    onClick={()=>removeRow(r.id)}
-                    className="px-2 py-1 rounded border hover:bg-gray-50"
-                  >
+                  <button onClick={() => removeRow(r.id)}
+                          className="px-2 py-1 rounded border hover:bg-gray-50">
                     Delete
                   </button>
                 </td>
@@ -483,8 +501,7 @@ function AddressBook() {
             ))}
             {rows.length === 0 && (
               <tr>
-                {/* colSpan uppdaterad: 8 kolumner nu */}
-                <td colSpan={8} className="px-3 py-6 text-center text-gray-500">No addresses</td>
+                <td colSpan={13} className="px-3 py-6 text-center text-gray-500">No addresses</td>
               </tr>
             )}
           </tbody>
@@ -493,6 +510,7 @@ function AddressBook() {
     </div>
   );
 }
+
 
 
 
