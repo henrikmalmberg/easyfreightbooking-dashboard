@@ -1469,19 +1469,74 @@ function AdminPricing() {
   const [tab, setTab] = useState("general");
   const [msg, setMsg] = useState("");
 
+  // ===== helpers för nya modes =====
+  const slugify = (s) =>
+    String(s || "")
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, "")
+      .replace(/\s+/g, "_")
+      .replace(/-+/g, "_");
+
+  const uniqueKey = (baseKey, data) => {
+    let key = baseKey;
+    let i = 1;
+    while (key in (data || {})) {
+      i += 1;
+      key = `${baseKey}_${i}`;
+    }
+    return key;
+  };
+
+  const makeDefaultMode = (label) => ({
+    label,
+    description: "",
+    // Pricing
+    km_price_eur: 1.2,
+    co2_per_ton_km: 0.045,
+    min_allowed_weight_kg: 100,
+    max_allowed_weight_kg: 25160,
+    max_weight_kg: 25160,
+    default_breakpoint: 20000,
+    // Curve
+    p1: 30,
+    price_p1: 50,
+    p2: 740,
+    p2k: 0.1,
+    p2m: 100,
+    p3: 1850,
+    p3k: 0.12,
+    p3m: 120,
+    // Transit
+    transit_speed_kmpd: 600,
+    cutoff_hour: 12,
+    extra_pickup_days: 0,
+    // Zones & balance – tomma tills du fyller i
+    available_zones: {},
+    balance_factors: {},
+  });
+
+  // UI-state för create-dialog
+  const [newOpen, setNewOpen] = useState(false);
+  const [newLabel, setNewLabel] = useState("");
+  const [newKey, setNewKey] = useState("");
+
   useEffect(() => {
-    authedGet("/me").then((m) => {
-      if (m?.user?.role !== "superadmin") throw new Error("Forbidden");
-      setMe(m);
-      return authedGet("/admin/config");
-    }).then((d) => {
-      setCfgPublished(d.published?.data || {});
-      setCfgDraft(d.draft?.data || null);
-      const base = d.draft?.data || d.published?.data || {};
-      setWorking(JSON.parse(JSON.stringify(base)));
-      const firstMode = Object.keys(base || {})[0] || "";
-      setSelectedMode(firstMode);
-    }).catch((e) => setMsg(`❌ ${String(e.message || e)}`));
+    authedGet("/me")
+      .then((m) => {
+        if (m?.user?.role !== "superadmin") throw new Error("Forbidden");
+        setMe(m);
+        return authedGet("/admin/config");
+      })
+      .then((d) => {
+        const base = d.draft?.data || d.published?.data || {};
+        setCfgPublished(d.published?.data || {});
+        setCfgDraft(d.draft?.data || null);
+        setWorking(JSON.parse(JSON.stringify(base)));
+        const firstMode = Object.keys(base || {})[0] || "";
+        setSelectedMode(firstMode);
+      })
+      .catch((e) => setMsg(`❌ ${String(e.message || e)}`));
   }, []);
 
   const modes = Object.keys(working || {});
@@ -1489,30 +1544,28 @@ function AdminPricing() {
   function setModeField(mode, path, value) {
     setWorking((prev) => {
       const next = { ...prev };
-      next[mode] = { ...next[mode] };
+      next[mode] = { ...(next[mode] || {}) };
       next[mode][path] = value;
       return next;
     });
   }
 
-  function parseZones(text) {
+  // ===== text<->obj helpers du redan hade =====
+  const parseZones = (text) => {
     const out = {};
     text.split("\n").forEach((line) => {
       const s = line.trim();
       if (!s) return;
       const [cc, ranges] = s.split(":");
       if (!cc || !ranges) return;
-      out[cc.trim().toUpperCase()] = ranges.split(",").map(x => x.trim()).filter(Boolean);
+      out[cc.trim().toUpperCase()] = ranges.split(",").map((x) => x.trim()).filter(Boolean);
     });
     return out;
-  }
+  };
+  const zonesToText = (z) =>
+    !z ? "" : Object.entries(z).map(([cc, arr]) => `${cc}: ${arr.join(", ")}`).join("\n");
 
-  function zonesToText(z) {
-    if (!z) return "";
-    return Object.entries(z).map(([cc, arr]) => `${cc}: ${arr.join(", ")}`).join("\n");
-  }
-
-  function parseBalance(text) {
+  const parseBalance = (text) => {
     const out = {};
     text.split("\n").forEach((line) => {
       const s = line.trim();
@@ -1522,13 +1575,61 @@ function AdminPricing() {
       out[k.trim().toUpperCase()] = parseFloat(v);
     });
     return out;
+  };
+  const balanceToText = (b) =>
+    !b ? "" : Object.entries(b).map(([k, v]) => `${k}=${v}`).join("\n");
+
+  // ===== nya actions: create/duplicate/delete =====
+  function openNew() {
+    setNewLabel("");
+    setNewKey("");
+    setNewOpen(true);
+  }
+  function onNewLabelChange(v) {
+    setNewLabel(v);
+    if (!newKey) setNewKey(slugify(v));
+  }
+  function onNewKeyChange(v) {
+    setNewKey(slugify(v));
+  }
+  function createMode() {
+    const baseKey = slugify(newKey || newLabel || "new_mode");
+    const key = uniqueKey(baseKey || "mode", working);
+    const def = makeDefaultMode(newLabel || "New mode");
+    setWorking((prev) => ({ ...(prev || {}), [key]: def }));
+    setSelectedMode(key);
+    setNewOpen(false);
+    setMsg("✅ Mode created (remember to Save draft)");
   }
 
-  function balanceToText(b) {
-    if (!b) return "";
-    return Object.entries(b).map(([k, v]) => `${k}=${v}`).join("\n");
+  function duplicateMode() {
+    if (!selectedMode || !working?.[selectedMode]) return;
+    const src = working[selectedMode];
+    const lbl = (src.label || selectedMode) + " (copy)";
+    const baseKey = slugify(selectedMode + "_copy");
+    const key = uniqueKey(baseKey, working);
+    const clone = JSON.parse(JSON.stringify(src));
+    clone.label = lbl;
+    setWorking((prev) => ({ ...(prev || {}), [key]: clone }));
+    setSelectedMode(key);
+    setMsg("✅ Duplicated (remember to Save draft)");
   }
 
+  function deleteMode() {
+    if (!selectedMode) return;
+    if (!window.confirm(`Delete mode "${selectedMode}"? This will be removed from the draft config.`)) return;
+    setWorking((prev) => {
+      const next = { ...(prev || {}) };
+      delete next[selectedMode];
+      return next;
+    });
+    // välj första kvarvarande
+    const remaining = Object.keys(working || {}).filter((k) => k !== selectedMode);
+    setSelectedMode(remaining[0] || "");
+    setMsg("🗑️ Removed (remember to Save draft)");
+  }
+
+  // ===== draft actions =====
   async function saveDraft() {
     setMsg("");
     try {
@@ -1545,7 +1646,6 @@ function AdminPricing() {
       setMsg(`❌ ${String(e.message || e)}`);
     }
   }
-
   async function validateDraft() {
     setMsg("");
     try {
@@ -1555,16 +1655,12 @@ function AdminPricing() {
         body: JSON.stringify({ data: working }),
       });
       const j = await res.json();
-      if (!j.ok) {
-        setMsg(`⚠️ Validation errors:\n- ${j.errors.join("\n- ")}`);
-      } else {
-        setMsg("✅ Validation OK");
-      }
+      if (!j.ok) setMsg(`⚠️ Validation errors:\n- ${j.errors.join("\n- ")}`);
+      else setMsg("✅ Validation OK");
     } catch (e) {
       setMsg(`❌ ${String(e.message || e)}`);
     }
   }
-
   async function publishNow() {
     setMsg("");
     try {
@@ -1583,7 +1679,29 @@ function AdminPricing() {
   }
 
   if (!working) return <div>Loading…</div>;
-  if (!modes.length) return <div>No modes in config</div>;
+  if (!modes.length) return (
+    <div className="flex gap-4">
+      <aside className="w-72 bg-white border rounded-lg shadow-sm p-3">
+        <div className="font-semibold mb-2">Modes</div>
+        <button onClick={openNew} className="px-3 py-1.5 rounded bg-blue-600 text-white w-full">+ New mode</button>
+        {newOpen && (
+          <div className="mt-3 space-y-2">
+            <input className="w-full border rounded p-2" placeholder="Label"
+                   value={newLabel} onChange={(e)=>onNewLabelChange(e.target.value)} />
+            <input className="w-full border rounded p-2" placeholder="Key (slug)"
+                   value={newKey} onChange={(e)=>onNewKeyChange(e.target.value)} />
+            <div className="flex gap-2">
+              <button onClick={createMode} className="px-3 py-1.5 rounded bg-green-600 text-white">Create</button>
+              <button onClick={()=>setNewOpen(false)} className="px-3 py-1.5 rounded border">Cancel</button>
+            </div>
+          </div>
+        )}
+      </aside>
+      <section className="flex-1 bg-white border rounded-lg shadow-sm p-4">
+        <div className="text-gray-600">No modes yet – create your first.</div>
+      </section>
+    </div>
+  );
 
   const m = working[selectedMode] || {};
 
@@ -1602,17 +1720,36 @@ function AdminPricing() {
 
   return (
     <div className="flex gap-4">
-      {/* vänster lista */}
+      {/* vänster lista + toolbar */}
       <aside className="w-72 bg-white border rounded-lg shadow-sm overflow-auto">
-        <div className="p-3 border-b font-semibold">Modes</div>
+        <div className="p-3 border-b flex items-center justify-between">
+          <div className="font-semibold">Modes</div>
+          <button onClick={openNew} className="text-sm px-2 py-1 rounded bg-blue-600 text-white">+ New</button>
+        </div>
+
+        {/* inline create */}
+        {newOpen && (
+          <div className="px-3 py-2 border-b space-y-2">
+            <input className="w-full border rounded p-2" placeholder="Label"
+                   value={newLabel} onChange={(e)=>onNewLabelChange(e.target.value)} />
+            <input className="w-full border rounded p-2" placeholder="Key (auto from label)"
+                   value={newKey} onChange={(e)=>onNewKeyChange(e.target.value)} />
+            <div className="flex gap-2">
+              <button onClick={createMode} className="px-3 py-1.5 rounded bg-green-600 text-white">Create</button>
+              <button onClick={()=>setNewOpen(false)} className="px-3 py-1.5 rounded border">Cancel</button>
+            </div>
+          </div>
+        )}
+
         <ul>
           {modes.map((k) => {
             const label = working[k]?.label || k;
             const changed = JSON.stringify(cfgPublished?.[k]) !== JSON.stringify(working?.[k]);
+            const isSel = selectedMode === k;
             return (
-              <li key={k}>
+              <li key={k} className={`border-t ${isSel ? "bg-blue-50" : ""}`}>
                 <button
-                  className={`w-full text-left px-3 py-2 hover:bg-gray-50 ${selectedMode===k ? "bg-blue-50" : ""}`}
+                  className="w-full text-left px-3 py-2 hover:bg-gray-50"
                   onClick={()=>setSelectedMode(k)}
                 >
                   <div className="flex items-center justify-between">
@@ -1625,6 +1762,18 @@ function AdminPricing() {
             );
           })}
         </ul>
+
+        {/* actions för vald mode */}
+        <div className="p-3 border-t flex gap-2">
+          <button onClick={duplicateMode} disabled={!selectedMode}
+                  className={`px-2 py-1 rounded border ${selectedMode ? "hover:bg-gray-50" : "opacity-50 cursor-not-allowed"}`}>
+            Duplicate
+          </button>
+          <button onClick={deleteMode} disabled={!selectedMode}
+                  className={`px-2 py-1 rounded border ${selectedMode ? "hover:bg-gray-50" : "opacity-50 cursor-not-allowed"}`}>
+            Delete
+          </button>
+        </div>
       </aside>
 
       {/* höger formulär */}
@@ -1652,7 +1801,12 @@ function AdminPricing() {
 
         {tab==="general" && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {field("Label","label","text")}
+            <label className="block md:col-span-2">
+              <span className="text-xs text-gray-500">Label</span>
+              <input className="mt-1 w-full border rounded p-2"
+                     value={m?.label ?? ""}
+                     onChange={(e)=>setModeField(selectedMode,"label", e.target.value)} />
+            </label>
             <label className="md:col-span-2 block">
               <span className="text-xs text-gray-500">Description</span>
               <textarea
@@ -1661,6 +1815,7 @@ function AdminPricing() {
                 className="mt-1 w-full border rounded p-2 h-24"
               />
             </label>
+            <div className="text-xs text-gray-500 md:col-span-2">Key: <code>{selectedMode}</code> (cannot be changed here)</div>
           </div>
         )}
 
@@ -1716,11 +1871,19 @@ function AdminPricing() {
           </div>
         )}
 
-        {msg && <pre className="mt-4 whitespace-pre-wrap text-sm">{msg}</pre>}
+        {/* status */}
+        <div className="mt-4 text-sm whitespace-pre-wrap">{msg}</div>
+
+        {/* publicerad version-indikator */}
+        <div className="mt-3 text-xs text-gray-600 flex items-center gap-2">
+          <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
+          Published version {cfgPublished ? (cfgPublished.__version || "—") : "—"}
+        </div>
       </section>
     </div>
   );
 }
+
 
 function NewBooking() {
   const [goods, setGoods] = useState([{ type: "Colli", weight: "", length: "", width: "", height: "", quantity: 1 }]);
