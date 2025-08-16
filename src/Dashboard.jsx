@@ -1394,23 +1394,7 @@ function MyAccount() {
 }
 
 
-  async function sendInvite(e) {
-    e.preventDefault();
-    setInviteMsg("");
-    try {
-      const res = await fetch(`${API}/invite-user`, {
-        method: "POST",
-        headers: authHeaders(),
-        body: JSON.stringify(invite),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-      setInviteMsg("✅ Invitation sent!");
-      setInvite({ name: "", email: "", password: "", role: "user" });
-    } catch (e) {
-      setInviteMsg(`❌ ${e.message}`);
-    }
-  }
+
 
   return (
     <div className="max-w-xl">
