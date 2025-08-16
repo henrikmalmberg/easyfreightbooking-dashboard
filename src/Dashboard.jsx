@@ -1791,23 +1791,24 @@ const pickFromBookTo = (id) => {
         <section className="bg-white border rounded-lg p-4 shadow-sm">
           <h3 className="text-lg font-semibold mb-3">From</h3>
 
-          {addrbook.sender.length > 0 && (
-            <div className="mb-2">
-              <label className="text-sm text-gray-600 mr-2">Pick from address book:</label>
-              <select
-                className="border rounded p-1"
-                onChange={(e) => pickFromBookFrom(e.target.value)}
-                value=""
-              >
-                <option value="">— Select —</option>
-                {addrbook.sender.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {(a.label || a.business_name || a.address || "Address")} • {a.country_code}-{a.postal_code} {a.city}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+{/* FROM-kortet */}
+{addrbook.sender.length > 0 && (
+  <div className="mb-2">
+    <label className="text-sm text-gray-600 mr-2">Pick from address book:</label>
+    <select className="border rounded p-1" onChange={(e) => {
+      pickFromBookFrom(e.target.value);
+      e.target.value = ""; // återställ till —Select— efter val
+    }}>
+      <option value="">— Select —</option>
+      {addrbook.sender.map(a => (
+        <option key={a.id} value={a.id}>
+          {(a.label || a.business_name || a.address || "Address")} • {a.country_code}-{a.postal_code} {a.city}
+        </option>
+      ))}
+    </select>
+  </div>
+)}
+
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
@@ -1830,23 +1831,24 @@ const pickFromBookTo = (id) => {
         <section className="bg-white border rounded-lg p-4 shadow-sm">
           <h3 className="text-lg font-semibold mb-3">To</h3>
 
-          {addrbook.receiver.length > 0 && (
-            <div className="mb-2">
-              <label className="text-sm text-gray-600 mr-2">Pick from address book:</label>
-              <select
-                className="border rounded p-1"
-                onChange={(e) => pickFromBookTo(e.target.value)}
-                value=""
-              >
-                <option value="">— Select —</option>
-                {addrbook.receiver.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {(a.label || a.business_name || a.address || "Address")} • {a.country_code}-{a.postal_code} {a.city}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+{/* TO-kortet */}
+{addrbook.receiver.length > 0 && (
+  <div className="mb-2">
+    <label className="text-sm text-gray-600 mr-2">Pick from address book:</label>
+    <select className="border rounded p-1" onChange={(e) => {
+      pickFromBookTo(e.target.value);
+      e.target.value = "";
+    }}>
+      <option value="">— Select —</option>
+      {addrbook.receiver.map(a => (
+        <option key={a.id} value={a.id}>
+          {(a.label || a.business_name || a.address || "Address")} • {a.country_code}-{a.postal_code} {a.city}
+        </option>
+      ))}
+    </select>
+  </div>
+)}
+
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
