@@ -343,31 +343,34 @@ export default function BookingForm() {
   );
 
   // helpers för att applicera adressboksposter
-  const applyToPickup = (a) =>
-    setPickup((p) => ({
-      ...p,
-      business_name: a.business_name || "",
-      address: a.address || "",
-      city: a.city || "",
-      contact_name: a.contact_name || "",
-      phone: a.phone || "",
-      email: a.email || "",
-      opening_hours: a.opening_hours || "",
-      instructions: a.instructions || "",
-    }));
+const applyToPickup = (a) =>
+  setPickup((p) => ({
+    ...p,
+    business_name: a.business_name || "",
+    address: a.address || "",
+    address2: a.address2 || "",        // <— lägg till
+    city: a.city || "",
+    contact_name: a.contact_name || "",
+    phone: a.phone || "",
+    email: a.email || "",
+    opening_hours: a.opening_hours || "",
+    instructions: a.instructions || "",
+  }));
 
-  const applyToDelivery = (a) =>
-    setDelivery((p) => ({
-      ...p,
-      business_name: a.business_name || "",
-      address: a.address || "",
-      city: a.city || "",
-      contact_name: a.contact_name || "",
-      phone: a.phone || "",
-      email: a.email || "",
-      opening_hours: a.opening_hours || "",
-      instructions: a.instructions || "",
-    }));
+const applyToDelivery = (a) =>
+  setDelivery((p) => ({
+    ...p,
+    business_name: a.business_name || "",
+    address: a.address || "",
+    address2: a.address2 || "",        // <— lägg till
+    city: a.city || "",
+    contact_name: a.contact_name || "",
+    phone: a.phone || "",
+    email: a.email || "",
+    opening_hours: a.opening_hours || "",
+    instructions: a.instructions || "",
+  }));
+
 
   async function handleSubmit() {
     if (!approvals.terms || !approvals.gdpr) {
