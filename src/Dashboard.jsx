@@ -1625,6 +1625,22 @@ function NewBooking() {
   const [selectedOption, setSelectedOption] = useState(null);
   const navigate = useNavigate();
 
+  // === Adressbok för prissökningen (endast land+postnr används här) ===
+  const [addrbook, setAddrbook] = useState({ sender: [], receiver: [] });
+  useEffect(() => {
+    (async () => {
+      try {
+        const all = await authedFetch("/addresses");
+        setAddrbook({
+          sender: all.filter((a) => !a.type || a.type === "sender"),
+          receiver: all.filter((a) => !a.type || a.type === "receiver"),
+        });
+      } catch {
+        // tyst fel – prissökning funkar ändå
+      }
+    })();
+  }, []);
+
   const calculateChargeableWeight = (goods) => goods.reduce((total, item) => {
     const weight = parseFloat(item.weight) || 0;
     const length = (parseFloat(item.length) || 0) / 100;
@@ -1641,6 +1657,26 @@ function NewBooking() {
   const handleChange = (e) => setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
   const cityFrom = useCityLookup(form.pickup_postal, form.pickup_country);
   const cityTo   = useCityLookup(form.delivery_postal, form.delivery_country);
+
+  // Välj från adressbok -> fyll land + postnr (stad läses via lookup)
+  const pickFromBookFrom = (id) => {
+    const a = addrbook.sender.find(x => x.id === Number(id));
+    if (!a) return;
+    setForm(p => ({
+      ...p,
+      pickup_country: (a.country_code || p.pickup_country || "").toUpperCase(),
+      pickup_postal: a.postal_code || p.pickup_postal
+    }));
+  };
+  const pickFromBookTo = (id) => {
+    const a = addrbook.receiver.find(x => x.id === Number(id));
+    if (!a) return;
+    setForm(p => ({
+      ...p,
+      delivery_country: (a.country_code || p.delivery_country || "").toUpperCase(),
+      delivery_postal: a.postal_code || p.delivery_postal
+    }));
+  };
 
   const handleGoodsChange = (index, e) => {
     const { name, value } = e.target;
@@ -1727,34 +1763,85 @@ function NewBooking() {
     <div>
       <h1 className="text-2xl font-bold mb-6">🚛 Create new booking</h1>
 
+      {/* NYTT: två kolumner – samma stil som i BookingForm */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        <div>
-          <label className="block text-sm font-medium">From - country</label>
-          <select name="pickup_country" value={form.pickup_country} onChange={handleChange} className="mt-1 w-full border rounded p-2">
-            {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium">From postal code</label>
-          <div className="flex items-center gap-2">
-            <input name="pickup_postal" value={form.pickup_postal} onChange={handleChange} className="mt-1 border rounded p-2 w-[120px]" />
-            {cityFrom?.country === form.pickup_country && <span className="text-sm text-gray-600 mt-1">{cityFrom.city}</span>}
-          </div>
-        </div>
+        {/* FROM */}
+        <section className="bg-white border rounded-lg p-4 shadow-sm">
+          <h3 className="text-lg font-semibold mb-3">From</h3>
 
-        <div>
-          <label className="block text-sm font-medium">To - country</label>
-          <select name="delivery_country" value={form.delivery_country} onChange={handleChange} className="mt-1 w-full border rounded p-2">
-            {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium">To - postal code</label>
-          <div className="flex items-center gap-2">
-            <input name="delivery_postal" value={form.delivery_postal} onChange={handleChange} className="mt-1 border rounded p-2 w-[120px]" />
-            {cityTo?.country === form.delivery_country && <span className="text-sm text-gray-600 mt-1">{cityTo.city}</span>}
+          {addrbook.sender.length > 0 && (
+            <div className="mb-2">
+              <label className="text-sm text-gray-600 mr-2">Pick from address book:</label>
+              <select
+                className="border rounded p-1"
+                onChange={(e) => pickFromBookFrom(e.target.value)}
+                value=""
+              >
+                <option value="">— Select —</option>
+                {addrbook.sender.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {(a.label || a.business_name || a.address || "Address")} • {a.country_code}-{a.postal_code} {a.city}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium">From - country</label>
+              <select name="pickup_country" value={form.pickup_country} onChange={handleChange} className="mt-1 w-full border rounded p-2">
+                {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium">From postal code</label>
+              <div className="flex items-center gap-2">
+                <input name="pickup_postal" value={form.pickup_postal} onChange={handleChange} className="mt-1 border rounded p-2 w-[140px]" />
+                {cityFrom?.country === form.pickup_country && <span className="text-sm text-gray-600 mt-1">{cityFrom.city}</span>}
+              </div>
+            </div>
           </div>
-        </div>
+        </section>
+
+        {/* TO */}
+        <section className="bg-white border rounded-lg p-4 shadow-sm">
+          <h3 className="text-lg font-semibold mb-3">To</h3>
+
+          {addrbook.receiver.length > 0 && (
+            <div className="mb-2">
+              <label className="text-sm text-gray-600 mr-2">Pick from address book:</label>
+              <select
+                className="border rounded p-1"
+                onChange={(e) => pickFromBookTo(e.target.value)}
+                value=""
+              >
+                <option value="">— Select —</option>
+                {addrbook.receiver.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {(a.label || a.business_name || a.address || "Address")} • {a.country_code}-{a.postal_code} {a.city}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium">To - country</label>
+              <select name="delivery_country" value={form.delivery_country} onChange={handleChange} className="mt-1 w-full border rounded p-2">
+                {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium">To - postal code</label>
+              <div className="flex items-center gap-2">
+                <input name="delivery_postal" value={form.delivery_postal} onChange={handleChange} className="mt-1 border rounded p-2 w-[140px]" />
+                {cityTo?.country === form.delivery_country && <span className="text-sm text-gray-600 mt-1">{cityTo.city}</span>}
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
 
       <div className="mb-4">
