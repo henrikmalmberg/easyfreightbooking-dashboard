@@ -1390,8 +1390,8 @@ function MyAccount() {
       </form>
     </div>
   );
-}
 
+}
 
 
   async function sendInvite(e) {
@@ -1447,7 +1447,7 @@ function MyAccount() {
       </form>
     </div>
   );
-}
+
 
 /* =========================================================
    Protected: New booking (+ ResultCard)
