@@ -371,6 +371,13 @@ const applyToDelivery = (a) =>
     instructions: a.instructions || "",
   }));
 
+// Prefill från prissökningen (om användaren valde ur adressboken där)
+useEffect(() => {
+  const pre = location.state?.prefill;
+  if (pre?.sender)  applyToPickup(pre.sender);
+  if (pre?.receiver) applyToDelivery(pre.receiver);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
 
   async function handleSubmit() {
     if (!approvals.terms || !approvals.gdpr) {
