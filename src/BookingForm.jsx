@@ -97,33 +97,10 @@ function AddressSection({
   schedule,
   onScheduleChange,
   scheduleLabel,
-  addrOptions = [],           // <— NYTT: adressbok skickas in
-  onPickFromBook,            // <— NYTT: callback när man väljer
 }) {
   return (
     <div className="bg-white border rounded-lg p-4 shadow-sm">
       <h3 className="text-lg font-semibold mb-3">{title}</h3>
-
-      {addrOptions.length > 0 && onPickFromBook && (
-        <div className="mb-2">
-          <label className="text-sm text-gray-600 mr-2">Pick from address book:</label>
-          <select
-            className="border rounded p-1"
-            onChange={(e) => {
-              const id = Number(e.target.value || 0);
-              const a = addrOptions.find((x) => x.id === id);
-              if (a) onPickFromBook(a);
-            }}
-          >
-            <option value="">— Select —</option>
-            {addrOptions.map((a) => (
-              <option key={a.id} value={a.id}>
-                {(a.label || a.business_name || a.address || "Address")} • {a.country_code}-{a.postal_code} {a.city}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
@@ -259,22 +236,6 @@ function AddressSection({
 export default function BookingForm() {
   const navigate = useNavigate();
   const location = useLocation();
-
-  // Adressbok
-  const [addrbook, setAddrbook] = useState({ sender: [], receiver: [] });
-  useEffect(() => {
-    (async () => {
-      try {
-        const all = await authedFetch("/addresses");
-        setAddrbook({
-          sender: all.filter((a) => !a.type || a.type === "sender"),
-          receiver: all.filter((a) => !a.type || a.type === "receiver"),
-        });
-      } catch (e) {
-        console.warn("Could not load address book:", e.message);
-      }
-    })();
-  }, []);
 
   const [pickupSchedule, setPickupSchedule] = useState({ asap: true, date: "" });
   const [deliverySchedule, setDeliverySchedule] = useState({ asap: true, date: "" });
@@ -506,8 +467,6 @@ const payload = {
           schedule={pickupSchedule}
           onScheduleChange={setPickupSchedule}
           scheduleLabel="Requested pickup date"
-          addrOptions={addrbook.sender}
-          onPickFromBook={applyToPickup}
         />
         <AddressSection
           title="Delivery address"
@@ -518,8 +477,6 @@ const payload = {
           schedule={deliverySchedule}
           onScheduleChange={setDeliverySchedule}
           scheduleLabel="Requested delivery date"
-          addrOptions={addrbook.receiver}
-          onPickFromBook={applyToDelivery}
         />
       </div>
 
