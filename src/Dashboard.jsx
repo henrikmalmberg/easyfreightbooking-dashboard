@@ -1305,12 +1305,43 @@ function AdminAllBookings() {
 function MyAccount() {
   const [me, setMe] = useState(null);
   const [err, setErr] = useState(null);
-  const [invite, setInvite] = useState({ name: "", email: "", password: "", role: "user" });
-  const [inviteMsg, setInviteMsg] = useState("");
 
   useEffect(() => {
-    authedGet("/me").then(setMe).catch((e) => setErr(e.message));
+    let alive = true;
+
+    (async () => {
+      try {
+        // 1) Hämta /me (användare + org-id)
+        const m = await authedGet("/me", { cache: "no-store" });
+        if (!alive) return;
+        setMe(m);
+
+        // 2) Försök hämta färsk org-data (kan vara admin/öppen beroende på API)
+        const orgId = m?.organization?.id;
+        if (orgId) {
+          try {
+            const org = await authedGet(`/organizations/${orgId}`);
+            if (!alive) return;
+            setMe(prev => ({
+              ...prev,
+              organization: { ...(prev?.organization || {}), ...(org || {}) },
+            }));
+          } catch {
+            // saknar rättigheter? – det är ok, vi visar /me-versionen
+          }
+        }
+      } catch (e) {
+        if (!alive) return;
+        setErr(String(e.message || e));
+      }
+    })();
+
+    return () => { alive = false; };
   }, []);
+  
+  /* …resten av renderingen oförändrad… */
+}
+
 
   async function sendInvite(e) {
     e.preventDefault();
