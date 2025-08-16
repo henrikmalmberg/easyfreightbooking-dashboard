@@ -74,7 +74,7 @@ const COUNTRIES = [
   { code: "HR", name: "Croatia" }, { code: "SI", name: "Slovenia" }, { code: "GR", name: "Greece" },
   { code: "IE", name: "Ireland" }, { code: "EE", name: "Estonia" }, { code: "LV", name: "Latvia" },
   { code: "LT", name: "Lithuania" }, { code: "LU", name: "Luxembourg" },
-  { code: "UK", name: "United Kingdom" }, { code: "CH", name: "Switzerland" },
+  { code: "GB", name: "United Kingdom" }, { code: "CH", name: "Switzerland" },
   { code: "UA", name: "Ukraine" }
 ];
 
@@ -1647,12 +1647,12 @@ function NewBooking() {
   // NYTT: helpers när man väljer adress
 // när man väljer "From" ur adressboken
 const pickFromBookFrom = (id) => {
-  const a = addrbook.sender.find(x => x.id === Number(id));
+  const a = addrbook.sender.find(x => String(x.id) === String(id));  // ⬅️ ändrat
   if (!a) return;
-  setFromPrefill(a); // <-- spara hela adressen för prefill
+  setFromPrefill(a);
   setForm(p => ({
     ...p,
-    pickup_country: (a.country_code || p.pickup_country || "").toUpperCase(),
+    pickup_country: (a.country_code || p.pickup_country || "").toUpperCase().replace("UK","GB"),
     pickup_postal: (a.postal_code || "").trim(),
   }));
 };
@@ -1660,16 +1660,17 @@ const pickFromBookFrom = (id) => {
 
 // när man väljer "To" ur adressboken
 const pickFromBookTo = (id) => {
-  const a = addrbook.receiver.find(x => x.id === Number(id));
+  const a = addrbook.receiver.find(x => String(x.id) === String(id)); // ⬅️ ändrat
   if (!a) return;
-  setToPrefill(a); // <-- spara hela adressen för prefill
+  setToPrefill(a);
   setForm(p => ({
     ...p,
-    delivery_country: (a.country_code || p.delivery_country || "").toUpperCase(),
+    delivery_country: (a.country_code || p.delivery_country || "").toUpperCase().replace("UK","GB"),
     delivery_postal: (a.postal_code || "").trim(),
   }));
 };
 
+const [addrSel, setAddrSel] = useState({ from: "", to: "" });
 
   
   const calculateChargeableWeight = (goods) => goods.reduce((total, item) => {
@@ -1792,17 +1793,21 @@ const pickFromBookTo = (id) => {
 {addrbook.sender.length > 0 && (
   <div className="mb-2">
     <label className="text-sm text-gray-600 mr-2">Pick from address book:</label>
-    <select className="border rounded p-1" onChange={(e) => {
-      pickFromBookFrom(e.target.value);
-      e.target.value = ""; // återställ till —Select— efter val
-    }}>
-      <option value="">— Select —</option>
-      {addrbook.sender.map(a => (
-        <option key={a.id} value={a.id}>
-          {(a.label || a.business_name || a.address || "Address")} • {a.country_code}-{a.postal_code} {a.city}
-        </option>
-      ))}
-    </select>
+<select
+  className="border rounded p-1"
+  value={addrSel.from}
+  onChange={(e) => {
+    setAddrSel(s => ({ ...s, from: e.target.value }));
+    pickFromBookFrom(e.target.value);
+  }}
+>
+  <option value="">— Select —</option>
+  {addrbook.sender.map(a => (
+    <option key={a.id} value={a.id}>
+      {(a.label || a.business_name || a.address || "Address")} • {a.country_code}-{a.postal_code} {a.city}
+    </option>
+  ))}
+</select>
   </div>
 )}
 
@@ -1832,17 +1837,21 @@ const pickFromBookTo = (id) => {
 {addrbook.receiver.length > 0 && (
   <div className="mb-2">
     <label className="text-sm text-gray-600 mr-2">Pick from address book:</label>
-    <select className="border rounded p-1" onChange={(e) => {
-      pickFromBookTo(e.target.value);
-      e.target.value = "";
-    }}>
-      <option value="">— Select —</option>
-      {addrbook.receiver.map(a => (
-        <option key={a.id} value={a.id}>
-          {(a.label || a.business_name || a.address || "Address")} • {a.country_code}-{a.postal_code} {a.city}
-        </option>
-      ))}
-    </select>
+<select
+  className="border rounded p-1"
+  value={addrSel.to}
+  onChange={(e) => {
+    setAddrSel(s => ({ ...s, to: e.target.value }));
+    pickFromBookTo(e.target.value);
+  }}
+>
+  <option value="">— Select —</option>
+  {addrbook.receiver.map(a => (
+    <option key={a.id} value={a.id}>
+      {(a.label || a.business_name || a.address || "Address")} • {a.country_code}-{a.postal_code} {a.city}
+    </option>
+  ))}
+</select>
   </div>
 )}
 
