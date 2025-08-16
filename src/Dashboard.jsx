@@ -1752,11 +1752,12 @@ const pickFromBookTo = (id) => {
        state: {
         search: {
           pickup_country: form.pickup_country,
-           pickup_postal: form.pickup_postal,
+          pickup_postal: form.pickup_postal,
           pickup_city: cityFrom?.city || "",
           delivery_country: form.delivery_country,
           delivery_postal: form.delivery_postal,
           delivery_city: cityTo?.city || "",
+          prefill: { sender: fromPrefill || null, receiver: toPrefill || null }, 
           goods,
           chargeableWeight,
         },
