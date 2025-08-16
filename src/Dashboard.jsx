@@ -1641,6 +1641,17 @@ function NewBooking() {
     })();
   }, []);
 
+  // NYTT: helpers när man väljer adress
+const pickFromBookFrom = (id) => {
+  const a = addrbook.sender.find(x => x.id === Number(id));
+  if (!a) return;
+  setForm(p => ({
+    ...p,
+    pickup_country: (a.country_code || p.pickup_country || "").toUpperCase(),
+    pickup_postal: (a.postal_code || "").trim(),
+  }));
+};
+
   const calculateChargeableWeight = (goods) => goods.reduce((total, item) => {
     const weight = parseFloat(item.weight) || 0;
     const length = (parseFloat(item.length) || 0) / 100;
