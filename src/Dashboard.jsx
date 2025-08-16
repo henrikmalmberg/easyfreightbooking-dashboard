@@ -1689,25 +1689,7 @@ const pickFromBookTo = (id) => {
   const cityFrom = useCityLookup(form.pickup_postal, form.pickup_country);
   const cityTo   = useCityLookup(form.delivery_postal, form.delivery_country);
 
-  // Välj från adressbok -> fyll land + postnr (stad läses via lookup)
-  const pickFromBookFrom = (id) => {
-    const a = addrbook.sender.find(x => x.id === Number(id));
-    if (!a) return;
-    setForm(p => ({
-      ...p,
-      pickup_country: (a.country_code || p.pickup_country || "").toUpperCase(),
-      pickup_postal: a.postal_code || p.pickup_postal
-    }));
-  };
-  const pickFromBookTo = (id) => {
-    const a = addrbook.receiver.find(x => x.id === Number(id));
-    if (!a) return;
-    setForm(p => ({
-      ...p,
-      delivery_country: (a.country_code || p.delivery_country || "").toUpperCase(),
-      delivery_postal: a.postal_code || p.delivery_postal
-    }));
-  };
+
 
   const handleGoodsChange = (index, e) => {
     const { name, value } = e.target;
