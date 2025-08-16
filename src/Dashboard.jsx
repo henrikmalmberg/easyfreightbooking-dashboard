@@ -1624,6 +1624,9 @@ function NewBooking() {
   const [result, setResult] = useState(null);
   const [selectedOption, setSelectedOption] = useState(null);
   const navigate = useNavigate();
+  const [fromPrefill, setFromPrefill] = useState(null);
+  const [toPrefill, setToPrefill] = useState(null);
+
 
   // === Adressbok för prissökningen (endast land+postnr används här) ===
   const [addrbook, setAddrbook] = useState({ sender: [], receiver: [] });
@@ -1642,9 +1645,11 @@ function NewBooking() {
   }, []);
 
   // NYTT: helpers när man väljer adress
+// när man väljer "From" ur adressboken
 const pickFromBookFrom = (id) => {
   const a = addrbook.sender.find(x => x.id === Number(id));
   if (!a) return;
+  setFromPrefill(a); // <-- spara hela adressen för prefill
   setForm(p => ({
     ...p,
     pickup_country: (a.country_code || p.pickup_country || "").toUpperCase(),
@@ -1652,15 +1657,19 @@ const pickFromBookFrom = (id) => {
   }));
 };
 
+
+// när man väljer "To" ur adressboken
 const pickFromBookTo = (id) => {
   const a = addrbook.receiver.find(x => x.id === Number(id));
   if (!a) return;
+  setToPrefill(a); // <-- spara hela adressen för prefill
   setForm(p => ({
     ...p,
     delivery_country: (a.country_code || p.delivery_country || "").toUpperCase(),
     delivery_postal: (a.postal_code || "").trim(),
   }));
 };
+
 
   
   const calculateChargeableWeight = (goods) => goods.reduce((total, item) => {
@@ -1758,10 +1767,10 @@ const pickFromBookTo = (id) => {
   const handleSelect = (option) => {
     if (!option) return;
     navigate("/confirm", {
-      state: {
+       state: {
         search: {
           pickup_country: form.pickup_country,
-          pickup_postal: form.pickup_postal,
+           pickup_postal: form.pickup_postal,
           pickup_city: cityFrom?.city || "",
           delivery_country: form.delivery_country,
           delivery_postal: form.delivery_postal,
@@ -1773,12 +1782,17 @@ const pickFromBookTo = (id) => {
           mode: option.mode,
           total_price_eur: Number(String(option.total_price).replace(" EUR", "")),
           earliest_pickup_date: option.earliest_pickup,
-          transit_time_days: option.days ? option.days.split("–").map((n) => Number(n)) : [null, null],
+          transit_time_days: option.days ? option.days.split("–").map(Number) : [null, null],
           co2_emissions_grams: option.co2,
           description: option.description,
         },
+        prefill: {                      // <— NYTT
+          sender: fromPrefill || null,  // full adress från address book
+          receiver: toPrefill || null,
+        },
       },
     });
+
   };
 
   return (
