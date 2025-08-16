@@ -373,7 +373,8 @@ function AddressBook() {
     setMsg("");
     try {
       const blank = {
-        label: "", type: null,
+        label: "",
+        type: null, // lämnas kvar för kompatibilitet med backend
         business_name: "", address: "", postal_code: "", city: "",
         country_code: "", contact_name: "", phone: "", email: "",
         opening_hours: "", instructions: ""
@@ -404,7 +405,7 @@ function AddressBook() {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-3 py-2">Label</th>
-              <th className="px-3 py-2">Type</th>
+              {/* Type-kolumnen borttagen */}
               <th className="px-3 py-2">Business</th>
               <th className="px-3 py-2">Address</th>
               <th className="px-3 py-2">City</th>
@@ -418,49 +419,73 @@ function AddressBook() {
             {rows.map(r => (
               <tr key={r.id} className="border-t">
                 <td className="px-3 py-1">
-                  <input className="border rounded p-1 w-40" defaultValue={r.label || ""}
-                         onBlur={(e)=>saveRow(r.id, {label:e.target.value})}/>
+                  <input
+                    className="border rounded p-1 w-40"
+                    defaultValue={r.label || ""}
+                    onBlur={(e)=>saveRow(r.id, {label:e.target.value})}
+                  />
+                </td>
+
+                {/* Type-kolumnen borttagen */}
+
+                <td className="px-3 py-1">
+                  <input
+                    className="border rounded p-1 w-48"
+                    defaultValue={r.business_name || ""}
+                    onBlur={(e)=>saveRow(r.id, {business_name:e.target.value})}
+                  />
                 </td>
                 <td className="px-3 py-1">
-                  <select className="border rounded p-1"
-                          defaultValue={r.type || ""}
-                          onChange={(e)=>saveRow(r.id, {type: e.target.value || null})}>
-                    <option value="">—</option>
-                    <option value="sender">sender</option>
-                    <option value="receiver">receiver</option>
-                  </select>
+                  <input
+                    className="border rounded p-1 w-64"
+                    defaultValue={r.address || ""}
+                    onBlur={(e)=>saveRow(r.id, {address:e.target.value})}
+                  />
                 </td>
                 <td className="px-3 py-1">
-                  <input className="border rounded p-1 w-48" defaultValue={r.business_name || ""}
-                         onBlur={(e)=>saveRow(r.id, {business_name:e.target.value})}/>
+                  <input
+                    className="border rounded p-1 w-40"
+                    defaultValue={r.city || ""}
+                    onBlur={(e)=>saveRow(r.id, {city:e.target.value})}
+                  />
                 </td>
                 <td className="px-3 py-1">
-                  <input className="border rounded p-1 w-64" defaultValue={r.address || ""}
-                         onBlur={(e)=>saveRow(r.id, {address:e.target.value})}/>
+                  <input
+                    className="border rounded p-1 w-16"
+                    maxLength={2}
+                    defaultValue={r.country_code || ""}
+                    onBlur={(e)=>saveRow(r.id, {country_code:e.target.value.toUpperCase()})}
+                  />
                 </td>
                 <td className="px-3 py-1">
-                  <input className="border rounded p-1 w-40" defaultValue={r.city || ""}
-                         onBlur={(e)=>saveRow(r.id, {city:e.target.value})}/>
+                  <input
+                    className="border rounded p-1 w-24"
+                    defaultValue={r.postal_code || ""}
+                    onBlur={(e)=>saveRow(r.id, {postal_code:e.target.value})}
+                  />
                 </td>
                 <td className="px-3 py-1">
-                  <input className="border rounded p-1 w-16" maxLength={2} defaultValue={r.country_code || ""}
-                         onBlur={(e)=>saveRow(r.id, {country_code:e.target.value.toUpperCase()})}/>
-                </td>
-                <td className="px-3 py-1">
-                  <input className="border rounded p-1 w-24" defaultValue={r.postal_code || ""}
-                         onBlur={(e)=>saveRow(r.id, {postal_code:e.target.value})}/>
-                </td>
-                <td className="px-3 py-1">
-                  <input className="border rounded p-1 w-48" defaultValue={r.contact_name || ""}
-                         onBlur={(e)=>saveRow(r.id, {contact_name:e.target.value})}/>
+                  <input
+                    className="border rounded p-1 w-48"
+                    defaultValue={r.contact_name || ""}
+                    onBlur={(e)=>saveRow(r.id, {contact_name:e.target.value})}
+                  />
                 </td>
                 <td className="px-3 py-1 text-right">
-                  <button onClick={()=>removeRow(r.id)} className="px-2 py-1 rounded border hover:bg-gray-50">Delete</button>
+                  <button
+                    onClick={()=>removeRow(r.id)}
+                    className="px-2 py-1 rounded border hover:bg-gray-50"
+                  >
+                    Delete
+                  </button>
                 </td>
               </tr>
             ))}
             {rows.length === 0 && (
-              <tr><td colSpan={9} className="px-3 py-6 text-center text-gray-500">No addresses</td></tr>
+              <tr>
+                {/* colSpan uppdaterad: 8 kolumner nu */}
+                <td colSpan={8} className="px-3 py-6 text-center text-gray-500">No addresses</td>
+              </tr>
             )}
           </tbody>
         </table>
@@ -468,6 +493,7 @@ function AddressBook() {
     </div>
   );
 }
+
 
 
 
@@ -1624,73 +1650,66 @@ function NewBooking() {
   const [result, setResult] = useState(null);
   const [selectedOption, setSelectedOption] = useState(null);
   const navigate = useNavigate();
+
   const [fromPrefill, setFromPrefill] = useState(null);
   const [toPrefill, setToPrefill] = useState(null);
 
-
-  // === Adressbok för prissökningen (endast land+postnr används här) ===
-  const [addrbook, setAddrbook] = useState({ sender: [], receiver: [] });
+  // === Gemensam adressbok (en lista) ===
+  const [addrbook, setAddrbook] = useState([]);
   useEffect(() => {
     (async () => {
       try {
         const all = await authedFetch("/addresses");
-        setAddrbook({
-          sender: all.filter((a) => !a.type || a.type === "sender"),
-          receiver: all.filter((a) => !a.type || a.type === "receiver"),
-        });
+        setAddrbook(Array.isArray(all) ? all : []);
       } catch {
         // tyst fel – prissökning funkar ändå
       }
     })();
   }, []);
 
-  // NYTT: helpers när man väljer adress
-// när man väljer "From" ur adressboken
-const pickFromBookFrom = (id) => {
-  const a = addrbook.sender.find(x => String(x.id) === String(id));  // ⬅️ ändrat
-  if (!a) return;
-  setFromPrefill(a);
-  setForm(p => ({
-    ...p,
-    pickup_country: (a.country_code || p.pickup_country || "").toUpperCase().replace("UK","GB"),
-    pickup_postal: (a.postal_code || "").trim(),
-  }));
-};
+  // Valt alternativ i dropdowns (visar markerat val)
+  const [addrSel, setAddrSel] = useState({ from: "", to: "" });
 
+  // Helpers när man väljer adress ur boken
+  const pickFromBookFrom = (id) => {
+    const a = addrbook.find(x => String(x.id) === String(id));
+    if (!a) return;
+    setFromPrefill(a);
+    setForm(p => ({
+      ...p,
+      pickup_country: (a.country_code || p.pickup_country || "").toUpperCase().replace("UK", "GB"),
+      pickup_postal: (a.postal_code || "").trim(),
+    }));
+  };
 
-// när man väljer "To" ur adressboken
-const pickFromBookTo = (id) => {
-  const a = addrbook.receiver.find(x => String(x.id) === String(id)); // ⬅️ ändrat
-  if (!a) return;
-  setToPrefill(a);
-  setForm(p => ({
-    ...p,
-    delivery_country: (a.country_code || p.delivery_country || "").toUpperCase().replace("UK","GB"),
-    delivery_postal: (a.postal_code || "").trim(),
-  }));
-};
+  const pickFromBookTo = (id) => {
+    const a = addrbook.find(x => String(x.id) === String(id));
+    if (!a) return;
+    setToPrefill(a);
+    setForm(p => ({
+      ...p,
+      delivery_country: (a.country_code || p.delivery_country || "").toUpperCase().replace("UK", "GB"),
+      delivery_postal: (a.postal_code || "").trim(),
+    }));
+  };
 
-const [addrSel, setAddrSel] = useState({ from: "", to: "" });
-
-  
-  const calculateChargeableWeight = (goods) => goods.reduce((total, item) => {
-    const weight = parseFloat(item.weight) || 0;
-    const length = (parseFloat(item.length) || 0) / 100;
-    const width  = (parseFloat(item.width)  || 0) / 100;
-    const height = (parseFloat(item.height) || 0) / 100;
-    const quantity = parseInt(item.quantity) || 0;
-    const volumeWeight = length * width * height * 335;
-    const chargeable = Math.max(weight, volumeWeight);
-    return total + chargeable * quantity;
-  }, 0);
+  const calculateChargeableWeight = (goods) =>
+    goods.reduce((total, item) => {
+      const weight = parseFloat(item.weight) || 0;
+      const length = (parseFloat(item.length) || 0) / 100;
+      const width  = (parseFloat(item.width)  || 0) / 100;
+      const height = (parseFloat(item.height) || 0) / 100;
+      const quantity = parseInt(item.quantity) || 0;
+      const volumeWeight = length * width * height * 335;
+      const chargeable = Math.max(weight, volumeWeight);
+      return total + chargeable * quantity;
+    }, 0);
 
   const chargeableWeight = calculateChargeableWeight(goods);
 
   const handleChange = (e) => setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
   const cityFrom = useCityLookup(form.pickup_postal, form.pickup_country);
   const cityTo   = useCityLookup(form.delivery_postal, form.delivery_country);
-
-
 
   const handleGoodsChange = (index, e) => {
     const { name, value } = e.target;
@@ -1714,7 +1733,8 @@ const [addrSel, setAddrSel] = useState({ from: "", to: "" });
     setGoods(updated);
   };
 
-  const addGoodsRow = () => setGoods([...goods, { type: "Colli", weight: "", length: "", width: "", height: "", quantity: 1 }]);
+  const addGoodsRow = () =>
+    setGoods([...goods, { type: "Colli", weight: "", length: "", width: "", height: "", quantity: 1 }]);
   const removeGoodsRow = (i) => setGoods(goods.filter((_, idx) => idx !== i));
 
   const handleSubmit = async () => {
@@ -1750,7 +1770,7 @@ const [addrSel, setAddrSel] = useState({ from: "", to: "" });
   const handleSelect = (option) => {
     if (!option) return;
     navigate("/confirm", {
-       state: {
+      state: {
         search: {
           pickup_country: form.pickup_country,
           pickup_postal: form.pickup_postal,
@@ -1758,7 +1778,7 @@ const [addrSel, setAddrSel] = useState({ from: "", to: "" });
           delivery_country: form.delivery_country,
           delivery_postal: form.delivery_postal,
           delivery_city: cityTo?.city || "",
-          prefill: { sender: fromPrefill || null, receiver: toPrefill || null }, 
+          prefill: { sender: fromPrefill || null, receiver: toPrefill || null },
           goods,
           chargeableWeight,
         },
@@ -1770,60 +1790,70 @@ const [addrSel, setAddrSel] = useState({ from: "", to: "" });
           co2_emissions_grams: option.co2,
           description: option.description,
         },
-        prefill: {                      // <— NYTT
-          sender: fromPrefill || null,  // full adress från address book
+        prefill: {
+          sender: fromPrefill || null,
           receiver: toPrefill || null,
         },
       },
     });
-
   };
 
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">🚛 Create new booking</h1>
 
-      {/* NYTT: två kolumner – samma stil som i BookingForm */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         {/* FROM */}
         <section className="bg-white border rounded-lg p-4 shadow-sm">
           <h3 className="text-lg font-semibold mb-3">From</h3>
 
-{/* FROM-kortet */}
-{addrbook.sender.length > 0 && (
-  <div className="mb-2">
-    <label className="text-sm text-gray-600 mr-2">Pick from address book:</label>
-<select
-  className="border rounded p-1"
-  value={addrSel.from}
-  onChange={(e) => {
-    setAddrSel(s => ({ ...s, from: e.target.value }));
-    pickFromBookFrom(e.target.value);
-  }}
->
-  <option value="">— Select —</option>
-  {addrbook.sender.map(a => (
-    <option key={a.id} value={a.id}>
-      {(a.label || a.business_name || a.address || "Address")} • {a.country_code}-{a.postal_code} {a.city}
-    </option>
-  ))}
-</select>
-  </div>
-)}
-
+          {addrbook.length > 0 && (
+            <div className="mb-2">
+              <label className="text-sm text-gray-600 mr-2">Pick from address book:</label>
+              <select
+                className="border rounded p-1"
+                value={addrSel.from}
+                onChange={(e) => {
+                  setAddrSel(s => ({ ...s, from: e.target.value }));
+                  pickFromBookFrom(e.target.value);
+                }}
+              >
+                <option value="">— Select —</option>
+                {addrbook.map(a => (
+                  <option key={a.id} value={a.id}>
+                    {(a.label || a.business_name || a.address || "Address")} • {a.country_code}-{a.postal_code} {a.city}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium">From - country</label>
-              <select name="pickup_country" value={form.pickup_country} onChange={handleChange} className="mt-1 w-full border rounded p-2">
-                {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
+              <select
+                name="pickup_country"
+                value={form.pickup_country}
+                onChange={handleChange}
+                className="mt-1 w-full border rounded p-2"
+              >
+                {COUNTRIES.map((c) => (
+                  <option key={c.code} value={c.code}>{c.name}</option>
+                ))}
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium">From postal code</label>
               <div className="flex items-center gap-2">
-                <input name="pickup_postal" value={form.pickup_postal} onChange={handleChange} className="mt-1 border rounded p-2 w-[140px]" />
-                {cityFrom?.country === form.pickup_country && <span className="text-sm text-gray-600 mt-1">{cityFrom.city}</span>}
+                <input
+                  name="pickup_postal"
+                  value={form.pickup_postal}
+                  onChange={handleChange}
+                  className="mt-1 border rounded p-2 w-[140px]"
+                />
+                {cityFrom?.country === form.pickup_country && (
+                  <span className="text-sm text-gray-600 mt-1">{cityFrom.city}</span>
+                )}
               </div>
             </div>
           </div>
@@ -1833,41 +1863,53 @@ const [addrSel, setAddrSel] = useState({ from: "", to: "" });
         <section className="bg-white border rounded-lg p-4 shadow-sm">
           <h3 className="text-lg font-semibold mb-3">To</h3>
 
-{/* TO-kortet */}
-{addrbook.receiver.length > 0 && (
-  <div className="mb-2">
-    <label className="text-sm text-gray-600 mr-2">Pick from address book:</label>
-<select
-  className="border rounded p-1"
-  value={addrSel.to}
-  onChange={(e) => {
-    setAddrSel(s => ({ ...s, to: e.target.value }));
-    pickFromBookTo(e.target.value);
-  }}
->
-  <option value="">— Select —</option>
-  {addrbook.receiver.map(a => (
-    <option key={a.id} value={a.id}>
-      {(a.label || a.business_name || a.address || "Address")} • {a.country_code}-{a.postal_code} {a.city}
-    </option>
-  ))}
-</select>
-  </div>
-)}
-
+          {addrbook.length > 0 && (
+            <div className="mb-2">
+              <label className="text-sm text-gray-600 mr-2">Pick from address book:</label>
+              <select
+                className="border rounded p-1"
+                value={addrSel.to}
+                onChange={(e) => {
+                  setAddrSel(s => ({ ...s, to: e.target.value }));
+                  pickFromBookTo(e.target.value);
+                }}
+              >
+                <option value="">— Select —</option>
+                {addrbook.map(a => (
+                  <option key={a.id} value={a.id}>
+                    {(a.label || a.business_name || a.address || "Address")} • {a.country_code}-{a.postal_code} {a.city}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium">To - country</label>
-              <select name="delivery_country" value={form.delivery_country} onChange={handleChange} className="mt-1 w-full border rounded p-2">
-                {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
+              <select
+                name="delivery_country"
+                value={form.delivery_country}
+                onChange={handleChange}
+                className="mt-1 w-full border rounded p-2"
+              >
+                {COUNTRIES.map((c) => (
+                  <option key={c.code} value={c.code}>{c.name}</option>
+                ))}
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium">To - postal code</label>
               <div className="flex items-center gap-2">
-                <input name="delivery_postal" value={form.delivery_postal} onChange={handleChange} className="mt-1 border rounded p-2 w-[140px]" />
-                {cityTo?.country === form.delivery_country && <span className="text-sm text-gray-600 mt-1">{cityTo.city}</span>}
+                <input
+                  name="delivery_postal"
+                  value={form.delivery_postal}
+                  onChange={handleChange}
+                  className="mt-1 border rounded p-2 w-[140px]"
+                />
+                {cityTo?.country === form.delivery_country && (
+                  <span className="text-sm text-gray-600 mt-1">{cityTo.city}</span>
+                )}
               </div>
             </div>
           </div>
@@ -1962,3 +2004,4 @@ const [addrSel, setAddrSel] = useState({ from: "", to: "" });
     </div>
   );
 }
+
