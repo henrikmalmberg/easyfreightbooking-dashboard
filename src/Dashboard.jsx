@@ -1326,7 +1326,7 @@ function MyAccount() {
               organization: { ...(prev?.organization || {}), ...(org || {}) },
             }));
           } catch {
-            // saknar rättighet till /organizations/:id? – då nöjer vi oss med /me
+            // saknar rättighet till /organizations/:id – då nöjer vi oss med /me
           }
         }
       } catch (e) {
@@ -1390,47 +1390,8 @@ function MyAccount() {
       </form>
     </div>
   );
-
 }
 
-
-
-
-  return (
-    <div className="max-w-xl">
-      <h1 className="text-3xl font-bold mb-4">My account</h1>
-      {err && <div className="text-red-600 mb-2">{String(err)}</div>}
-      {me && (
-        <div className="mb-8 bg-white rounded border p-4 space-y-1">
-          <div><strong>Organization:</strong> {me.organization.company_name}</div>
-          <div><strong>VAT:</strong> {me.organization.vat_number}</div>
-          <div><strong>Address:</strong> {me.organization.address}</div>
-          <div><strong>Postal code:</strong> {me.organization.postal_code || "—"}</div>
-          <div><strong>Country:</strong> {me.organization.country_code || "—"}</div>
-          <div><strong>Payment terms:</strong> {me.organization.payment_terms_days} days</div>
-          <div><strong>Currency:</strong> {me.organization.currency}</div>
-        </div>
-      )}
-
-      <h2 className="text-xl font-semibold mb-2">Invite a colleague</h2>
-      <form onSubmit={sendInvite} className="bg-white rounded border p-4 space-y-3">
-        <input className="w-full border rounded p-2" placeholder="Name" value={invite.name}
-               onChange={(e) => setInvite({ ...invite, name: e.target.value })} required />
-        <input className="w-full border rounded p-2" placeholder="Email" type="email" value={invite.email}
-               onChange={(e) => setInvite({ ...invite, email: e.target.value })} required />
-        <input className="w-full border rounded p-2" placeholder="Temporary password" type="text" value={invite.password}
-               onChange={(e) => setInvite({ ...invite, password: e.target.value })} required />
-        <select className="w-full border rounded p-2" value={invite.role}
-                onChange={(e) => setInvite({ ...invite, role: e.target.value })}>
-          <option value="user">User</option>
-          <option value="admin">Admin</option>
-        </select>
-
-        <button className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">Send invite</button>
-        {inviteMsg && <div className="text-sm mt-2">{inviteMsg}</div>}
-      </form>
-    </div>
-  );
 
 
 /* =========================================================
