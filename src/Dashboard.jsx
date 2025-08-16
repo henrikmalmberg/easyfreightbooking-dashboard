@@ -1305,18 +1305,17 @@ function AdminAllBookings() {
 function MyAccount() {
   const [me, setMe] = useState(null);
   const [err, setErr] = useState(null);
+  const [invite, setInvite] = useState({ name: "", email: "", password: "", role: "user" });
+  const [inviteMsg, setInviteMsg] = useState("");
 
   useEffect(() => {
     let alive = true;
-
     (async () => {
       try {
-        // 1) Hämta /me (användare + org-id)
         const m = await authedGet("/me", { cache: "no-store" });
         if (!alive) return;
         setMe(m);
 
-        // 2) Försök hämta färsk org-data (kan vara admin/öppen beroende på API)
         const orgId = m?.organization?.id;
         if (orgId) {
           try {
@@ -1327,7 +1326,7 @@ function MyAccount() {
               organization: { ...(prev?.organization || {}), ...(org || {}) },
             }));
           } catch {
-            // saknar rättigheter? – det är ok, vi visar /me-versionen
+            // saknar rättighet till /organizations/:id? – då nöjer vi oss med /me
           }
         }
       } catch (e) {
@@ -1335,12 +1334,64 @@ function MyAccount() {
         setErr(String(e.message || e));
       }
     })();
-
     return () => { alive = false; };
   }, []);
-  
-  /* …resten av renderingen oförändrad… */
+
+  async function sendInvite(e) {
+    e.preventDefault();
+    setInviteMsg("");
+    try {
+      const res = await fetch(`${API}/invite-user`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify(invite),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      setInviteMsg("✅ Invitation sent!");
+      setInvite({ name: "", email: "", password: "", role: "user" });
+    } catch (e) {
+      setInviteMsg(`❌ ${e.message}`);
+    }
+  }
+
+  return (
+    <div className="max-w-xl">
+      <h1 className="text-3xl font-bold mb-4">My account</h1>
+      {err && <div className="text-red-600 mb-2">{String(err)}</div>}
+      {me && (
+        <div className="mb-8 bg-white rounded border p-4 space-y-1">
+          <div><strong>Organization:</strong> {me.organization?.company_name}</div>
+          <div><strong>VAT:</strong> {me.organization?.vat_number}</div>
+          <div><strong>Address:</strong> {me.organization?.address || "—"}</div>
+          <div><strong>Postal code:</strong> {me.organization?.postal_code || "—"}</div>
+          <div><strong>Country:</strong> {me.organization?.country_code || "—"}</div>
+          <div><strong>Payment terms:</strong> {me.organization?.payment_terms_days} days</div>
+          <div><strong>Currency:</strong> {me.organization?.currency}</div>
+        </div>
+      )}
+
+      <h2 className="text-xl font-semibold mb-2">Invite a colleague</h2>
+      <form onSubmit={sendInvite} className="bg-white rounded border p-4 space-y-3">
+        <input className="w-full border rounded p-2" placeholder="Name" value={invite.name}
+               onChange={(e) => setInvite({ ...invite, name: e.target.value })} required />
+        <input className="w-full border rounded p-2" placeholder="Email" type="email" value={invite.email}
+               onChange={(e) => setInvite({ ...invite, email: e.target.value })} required />
+        <input className="w-full border rounded p-2" placeholder="Temporary password" type="text" value={invite.password}
+               onChange={(e) => setInvite({ ...invite, password: e.target.value })} required />
+        <select className="w-full border rounded p-2" value={invite.role}
+                onChange={(e) => setInvite({ ...invite, role: e.target.value })}>
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+        </select>
+
+        <button className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">Send invite</button>
+        {inviteMsg && <div className="text-sm mt-2">{inviteMsg}</div>}
+      </form>
+    </div>
+  );
 }
+
 
 
   async function sendInvite(e) {
