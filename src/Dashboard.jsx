@@ -77,9 +77,11 @@ function DownloadCMRButton({ bookingId, bookingNumber }) {
       headers: authHeaders(),
     });
     if (!res.ok) {
-      const txt = await res.text().catch(() => "");
-      throw new Error(`HTTP ${res.status}${txt ? `: ${txt}` : ""}`);
+      const txt = await res.text();
+      const clean = txt.replace(/<[^>]+>/g, "").trim(); // ta bort ev. HTML
+      throw new Error(`HTTP ${res.status}: ${clean || "error"}`);
     }
+
     const blob = await res.blob();
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
