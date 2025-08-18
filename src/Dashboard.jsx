@@ -60,6 +60,50 @@ async function authedFetch(path, opts={}) {
   return body;
 }
 
+// === Download CMR (PDF) button ===
+function DownloadCMRButton({ bookingId, bookingNumber }) {
+  const [loading, setLoading] = useState(false);
+
+  const handleClick = async () => {
+    if (!bookingId) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`${API}/bookings/${bookingId}/cmr.pdf`, {
+        headers: authHeaders(),
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(`HTTP ${res.status}: ${txt}`);
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `CMR_${bookingNumber || bookingId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("CMR download failed:", err);
+      alert("Kunde inte hämta CMR-PDF. Kontrollera att du är inloggad och att bokningen finns.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={loading || !bookingId}
+      title="Ladda ner CMR-fraktsedel (PDF)"
+      className="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium shadow-sm hover:bg-gray-50 disabled:opacity-60"
+    >
+      <span role="img" aria-label="cmr">📄</span>
+      {loading ? "Genererar…" : "CMR"}
+    </button>
+  );
+}
 
 
 /* =========================================================
@@ -1092,35 +1136,46 @@ async function doReassign() {
           <div className="text-gray-500">Select a booking from the list.</div>
         ) : (
           <div className="bg-white border rounded-lg shadow-sm p-4 md:p-6">
-            <div className="flex items-start justify-between mb-4 gap-3">
-              <div className="flex items-center gap-3">
-                <span className="text-lg font-semibold">{selected.booking_number}</span>
-                <span className={`text-xs px-2 py-0.5 rounded ${statusColors[selected.status] || "bg-gray-100"}`}>
-                  {selected.status || "NEW"}
-                </span>
-              </div>
+           <div className="flex items-start justify-between mb-4 gap-3">
+  {/* Vänster: nummer + status */}
+  <div className="flex items-center gap-3">
+    <span className="text-lg font-semibold">{selected.booking_number}</span>
+    <span className={`text-xs px-2 py-0.5 rounded ${statusColors[selected.status] || "bg-gray-100"}`}>
+      {selected.status || "NEW"}
+    </span>
+  </div>
 
-              <div className="text-right text-sm text-gray-600">
-                <div>
-                  Booked:{" "}
-                  {selected.booking_date ||
-                    (selected.created_at ? new Date(selected.created_at).toLocaleDateString() : "—")}
-                </div>
-                {typeof selected.price_eur === "number" && (
-                  <div className="font-medium">{Math.round(selected.price_eur)} EUR</div>
-                )}
+  {/* Höger: info + actions */}
+  <div className="flex items-end gap-3">
+    {/* Info (datum/pris) */}
+    <div className="text-right text-sm text-gray-600">
+      <div>
+        Booked:{" "}
+        {selected.booking_date ||
+          (selected.created_at ? new Date(selected.created_at).toLocaleDateString() : "—")}
+      </div>
+      {typeof selected.price_eur === "number" && (
+        <div className="font-medium">{Math.round(selected.price_eur)} EUR</div>
+      )}
 
-                {/* Change customer – endast superadmin i admin-läge */}
-                {adminMode && me?.role === "superadmin" && (
-                  <button
-                    onClick={openReassign}
-                    className="mt-2 px-3 py-1 text-xs bg-gray-100 border rounded hover:bg-gray-200"
-                  >
-                    Change customer
-                  </button>
-                )}
-              </div>
-            </div>
+      {adminMode && me?.role === "superadmin" && (
+        <button
+          onClick={openReassign}
+          className="mt-2 px-3 py-1 text-xs bg-gray-100 border rounded hover:bg-gray-200 w-full"
+        >
+          Change customer
+        </button>
+      )}
+    </div>
+
+    {/* ✅ CMR-knappen */}
+    <DownloadCMRButton
+      bookingId={selected.id}
+      bookingNumber={selected.booking_number}
+    />
+  </div>
+</div>
+
 
             {/* Customer + user */}
             {selected?.organization && (
