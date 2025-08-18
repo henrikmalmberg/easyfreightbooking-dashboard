@@ -10,6 +10,7 @@ import {
 import BookingForm from "./BookingForm";
 import AllUsers from "./AllUsers";
 import AllOrganizations from "./AllOrganizations";
+import FAQ from "./FAQ";
 
 // Valfri liten startsida (named export)
 function DashboardHome() {
@@ -145,6 +146,7 @@ export default function App() {
           <Route path="/all-users" element={<ProtectedRoute><AllUsers /></ProtectedRoute>} />
           <Route path="/admin/organizations" element={<ProtectedRoute><AllOrganizations /></ProtectedRoute>} />
           <Route path="/address-book" element={<ProtectedRoute><AddressBook /></ProtectedRoute>} />
+          <Route path="/faq" element={<ProtectedRoute><FAQ /></ProtectedRoute>} />
           
           <Route
             path="/admin/pricing"
@@ -243,6 +245,9 @@ function Sidebar({ visible, onClose }) {
             </Link>
             <Link to="/address-book" className="block text-gray-700 hover:text-blue-600" onClick={onClose}>
               Address Book
+            </Link>
+            <Link to="/faq" className="block text-gray-700 hover:text-blue-600" onClick={onClose}>
+               FAQ
             </Link>
 
 
