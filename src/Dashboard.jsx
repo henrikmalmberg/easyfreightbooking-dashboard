@@ -247,7 +247,7 @@ function Sidebar({ visible, onClose }) {
               Address Book
             </Link>
             <Link to="/faq" className="block text-gray-700 hover:text-blue-600" onClick={onClose}>
-               FAQ
+              FAQ
             </Link>
 
 
