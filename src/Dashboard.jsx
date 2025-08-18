@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+  import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -84,13 +84,13 @@ function DownloadCMRButton({ bookingId, bookingNumber }) {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-} catch (err) {
-  console.error("CMR download failed:", err);
-  const msg = err?.message ? String(err.message) : "Unknown error";
-  alert(`Kunde inte hämta CMR-PDF.\n${msg}`);
-} finally {
-  setLoading(false);
-}
+      } catch (err) {
+        console.error("CMR download failed:", err);
+        const msg = err?.message ? String(err.message) : "Unknown error";
+        alert(`Kunde inte hämta CMR-PDF.\n${msg}`);
+      } finally {
+        setLoading(false);
+      }
   };
 
   return (
