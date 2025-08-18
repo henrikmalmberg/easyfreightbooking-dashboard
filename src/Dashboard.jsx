@@ -1,4 +1,4 @@
-  import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -70,6 +70,8 @@ function DownloadCMRButton({ bookingId, bookingNumber }) {
     try {
       const res = await fetch(`${API}/bookings/${bookingId}/cmr.pdf`, {
         headers: authHeaders(),
+        method: "GET",
+        mode: "cors",   // <-- se till att den finns
       });
       if (!res.ok) {
         const txt = await res.text();
