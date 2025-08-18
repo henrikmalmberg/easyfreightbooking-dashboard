@@ -64,35 +64,50 @@ async function authedFetch(path, opts={}) {
 function DownloadCMRButton({ bookingId, bookingNumber }) {
   const [loading, setLoading] = useState(false);
 
+  const openInNewTab = () => {
+    const url = `${API}/bookings/${bookingId}/cmr.pdf?jwt=${encodeURIComponent(getToken())}`;
+    const win = window.open(url, "_blank", "noopener,noreferrer");
+    return !!win;
+  };
+
+  const fetchAndDownload = async () => {
+    const res = await fetch(`${API}/bookings/${bookingId}/cmr.pdf`, {
+      method: "GET",
+      mode: "cors",
+      headers: authHeaders(),
+    });
+    if (!res.ok) {
+      const txt = await res.text().catch(() => "");
+      throw new Error(`HTTP ${res.status}${txt ? `: ${txt}` : ""}`);
+    }
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `CMR_${bookingNumber || bookingId}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  };
+
   const handleClick = async () => {
     if (!bookingId) return;
     setLoading(true);
     try {
-      const res = await fetch(`${API}/bookings/${bookingId}/cmr.pdf`, {
-        headers: authHeaders(),
-        method: "GET",
-        mode: "cors",   // <-- se till att den finns
-      });
-      if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(`HTTP ${res.status}: ${txt}`);
+      // 1) Försök öppna i ny flik (bypass CORS)
+      const opened = openInNewTab();
+
+      // 2) Om popup blockeras → fallback till fetch + nedladdning
+      if (!opened) {
+        await fetchAndDownload();
       }
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `CMR_${bookingNumber || bookingId}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
-      } catch (err) {
-        console.error("CMR download failed:", err);
-        const msg = err?.message ? String(err.message) : "Unknown error";
-        alert(`Kunde inte hämta CMR-PDF.\n${msg}`);
-      } finally {
-        setLoading(false);
-      }
+    } catch (err) {
+      console.error("CMR download failed:", err);
+      alert(`Kunde inte hämta CMR-PDF.\n${err?.message || "Okänt fel"}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -107,6 +122,7 @@ function DownloadCMRButton({ bookingId, bookingNumber }) {
     </button>
   );
 }
+
 
 
 /* =========================================================
