@@ -144,6 +144,9 @@ const COUNTRIES = [
   { code: "UA", name: "Ukraine" }
 ];
 
+const formatIntSE = (n) =>
+  Number.isFinite(Number(n)) ? Math.round(Number(n)).toLocaleString("sv-SE") : "";
+
 const BOOKING_REGEX = /^[A-HJ-NP-TV-Z]{2}-[A-HJ-NP-TV-Z]{3}-\d{5}$/i;
 
 async function getCoordinates(postal, country) {
@@ -1128,8 +1131,9 @@ async function doReassign() {
                       {r.unload_place}
                     </td>
                     <td className="px-3 py-2 text-right whitespace-nowrap">
-                      {r.weight ? Math.round(r.weight) : ""}
+                      {formatIntSE(r.weight)}
                     </td>
+
                     <td className="px-3 py-2 whitespace-nowrap">
                       <span className={`text-xs px-2 py-0.5 rounded ${statusColors[r.status] || "bg-gray-100"}`}>
                         {r.status}
