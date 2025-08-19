@@ -970,36 +970,49 @@ async function doReassign() {
   }
   setReassignMsg("Working…");
 
-  try {
-    const res = await fetch(`${API}/admin/bookings/${selected.id}/reassign`, {
-      method: "PATCH",
-      headers: authHeaders(),
-      body: JSON.stringify({
-        organization_id: Number(reassignOrgId),
-        user_id: null, // nolla kopplad användare
-      }),
-    });
+  const payload = { organization_id: Number(reassignOrgId), user_id: null };
 
-    let j = null;
-    try { j = await res.json(); } catch {}
+  // Prova flera kombinationer så vi klarar både CORS och olika backend-impls
+  const attempts = [
+    { method: "PATCH", path: `/admin/bookings/${selected.id}/reassign` },
+    { method: "POST",  path: `/admin/bookings/${selected.id}/reassign` },
+    { method: "PUT",   path: `/admin/bookings/${selected.id}` }, // klassisk update
+  ];
 
-    if (!res.ok) {
-      const backend = j?.error || j?.detail;
-      throw new Error(backend ? `${backend} (HTTP ${res.status})` : `HTTP ${res.status}`);
+  let lastErr = null;
+  for (const a of attempts) {
+    try {
+      const res = await fetch(`${API}${a.path}`, {
+        method: a.method,
+        headers: authHeaders(),
+        body: JSON.stringify(payload),
+      });
+      // Om CORS/preflight fallerar kastar fetch innan vi når hit
+      if (res.ok) {
+        let j = null; try { j = await res.json(); } catch {}
+        setReassignMsg("✅ Booking moved");
+        setShowReassign(false);
+        await loadAll();
+        return;
+      }
+      // 404/405 → prova nästa variant
+      if (res.status === 404 || res.status === 405) {
+        lastErr = `${a.method} ${a.path} → HTTP ${res.status}`;
+        continue;
+      }
+      // Annat serverfel – visa och avbryt
+      const txt = await res.text();
+      throw new Error(`${a.method} ${a.path} → HTTP ${res.status} ${txt || ""}`.trim());
+    } catch (e) {
+      // TypeError: Failed to fetch (CORS/preflight) eller nätverk → prova nästa
+      lastErr = String(e.message || e);
+      continue;
     }
-
-    setReassignMsg("✅ Booking moved");
-    setShowReassign(false);
-
-    // ladda om listan (utan await utanför)
-    await loadAll();
-    // (valfritt) försök återmarkera den flyttade
-    const movedId = j?.id || selected.id;
-    setSelected(prev => (prev?.id === movedId ? prev : (all || []).find(b => b.id === movedId) || null));
-  } catch (e) {
-    setReassignMsg(`❌ ${String(e.message || e)}`);
   }
+
+  setReassignMsg(`❌ Could not move booking.\n${lastErr || "Unknown error"}`);
 }
+
 
 
 
