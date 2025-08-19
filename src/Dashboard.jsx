@@ -1170,7 +1170,7 @@ async function doReassign() {
       </section>
 
       {/* Höger: detaljer */}
-      <section className="w-1/2 overflow-auto">
+      <section className="flex-1 overflow-auto">
         {!selected ? (
           <div className="text-gray-500">Select a booking from the list.</div>
         ) : (
