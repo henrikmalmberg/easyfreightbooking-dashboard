@@ -1116,21 +1116,10 @@ async function doReassign() {
                     className={`cursor-pointer h-10 ${isSel ? "bg-blue-50" : "hover:bg-gray-50"}`}
                     onClick={() => setSelected(r.raw)}
                   >
-                    <td className="px-3 py-2 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <BookingNumberBadge value={r.booking_number} />
-                        <button
-                          className="text-gray-400 hover:text-gray-700"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            copy(r.booking_number);
-                          }}
-                          title="Copy booking number"
-                        >
-                          ⧉
-                        </button>
-                      </div>
-                    </td>
+                  <td className="px-3 py-2 whitespace-nowrap">
+                    <BookingNumberBadge value={r.booking_number} />
+                  </td>
+
 
                     {adminMode && (
                       <td className="px-3 py-2 whitespace-nowrap truncate max-w-[220px]">
