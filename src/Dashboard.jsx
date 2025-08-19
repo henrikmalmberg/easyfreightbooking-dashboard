@@ -1018,8 +1018,9 @@ async function doReassign() {
 
   return (
     <div className="flex gap-4 h-[calc(100vh-140px)]">
-      {/* Vänster: lista */}
-      <section className="w-1/2 bg-white border rounded-lg shadow-sm flex flex-col overflow-hidden">
+      {/* Vänster: lista (får mer utrymme) */}
+      <section className="basis-[62%] xl:basis-[66%] shrink-0 bg-white border rounded-lg shadow-sm flex flex-col overflow-hidden">
+
         <div className="overflow-auto">
           <table className="min-w-full text-sm">
             <thead className="sticky top-0 bg-gray-50 z-10">
