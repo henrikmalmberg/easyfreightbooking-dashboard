@@ -53,7 +53,10 @@ export default function ModePricingChart({
     setFtlPrice(Math.round(priceForWeight(config, 24000)) || 0);
   }, [config]);
 
-  const minAllowed = Math.max(Number(config?.min_allowed_weight_kg) || 0, Number(minW) || 0);
+  const configMin = Number(config?.min_allowed_weight_kg) || 0;
+  const minAllowed = Math.max(Number(minW) || 0, 1);
+  const [ftlAnchor, setFtlAnchor] = useState(24000);
+  
   const maxAllowed = Number(config?.max_weight_kg) || Number(config?.max_allowed_weight_kg) || 25000;
   const p1 = Number(config?.p1) || 0;
   const p2 = Number(config?.p2) || 0;
@@ -108,6 +111,19 @@ export default function ModePricingChart({
               title="Påverkar endast grafen, inte calculate/backend"
             />
           </label>
+          {showPerKg && (
+            <label className="flex items-center gap-1">
+              <span className="text-gray-500">FTL vikt</span>
+              <input
+                type="number"
+                className="border rounded px-2 py-1 w-24"
+                value={ftlAnchor}
+                min={1}
+                onChange={(e) => setFtlAnchor(Number(e.target.value))}
+                title="Används bara för att räkna om FTL-priset till €/kg"
+              />
+            </label>
+          )}
         </div>
       </div>
 
@@ -140,10 +156,26 @@ export default function ModePricingChart({
               <Legend />
               {p1 > 0 && <ReferenceLine x={p1} stroke="#888" strokeDasharray="4 4" label={{ value: "p1", position: "top" }} />}
               {p2 > 0 && <ReferenceLine x={p2} stroke="#888" strokeDasharray="4 4" label={{ value: "p2", position: "top" }} />}
+              {configMin > 0 && (
+                <ReferenceLine x={configMin} stroke="#bbb" strokeDasharray="1 3"
+                  label={{ value: "cfg min", position: "top" }} />
+              )}
               {!showPerKg && <Line type="monotone" dataKey="total" name="Total" dot={false} />}
               {showPerKg  && <Line type="monotone" dataKey="perkg" name="€/kg" dot={false} />}
               {Number.isFinite(ftlPrice) && ftlPrice > 0 && (
-                <ReferenceLine y={ftlPrice} stroke="#555" strokeDasharray="2 2" label={{ value: `FTL ${euro(ftlPrice)}`, position: "right" }} />
+                showPerKg ? (
+                  <ReferenceLine
+                    y={ftlPrice / Math.max(ftlAnchor, 1)}
+                    stroke="#555" strokeDasharray="2 2"
+                    label={{ value: `FTL ${(ftlPrice/Math.max(ftlAnchor,1)).toFixed(2)} €/kg`, position: "right" }}
+                  />
+                ) : (
+                  <ReferenceLine
+                    y={ftlPrice}
+                    stroke="#555" strokeDasharray="2 2"
+                    label={{ value: `FTL ${euro(ftlPrice)}`, position: "right" }}
+                  />
+                )
               )}
             </LineChart>
           </ResponsiveContainer>
