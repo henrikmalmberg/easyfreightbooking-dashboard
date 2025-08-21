@@ -1907,25 +1907,32 @@ function AdminPricing() {
           </div>
         )}
 
-        {tab==="pricing" && (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {field("km_price_eur","km_price_eur")}
-            {field("co2_per_ton_km","co2_per_ton_km")}
-            {field("min_allowed_weight_kg","min_allowed_weight_kg")}
-            {field("max_allowed_weight_kg","max_allowed_weight_kg")}
-            {field("max_weight_kg","max_weight_kg")}
-            {field("default_breakpoint","default_breakpoint")}
-            <div className="md:col-span-3 border-t pt-2 text-xs text-gray-500">Curve params</div>
-            {field("p1","p1")}
-            {field("price_p1","price_p1")}
-            {field("p2","p2")}
-            {field("p2k","p2k")}
-            {field("p2m","p2m")}
-            {field("p3","p3")}
-            {field("p3k","p3k")}
-            {field("p3m","p3m")}
-          </div>
-        )}
+{tab === "pricing" && (
+  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    {/* Vänster: befintliga fält */}
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+      {field("km_price_eur","km_price_eur")}
+      {field("co2_per_ton_km","co2_per_ton_km")}
+      {field("min_allowed_weight_kg","min_allowed_weight_kg")}
+      {field("max_allowed_weight_kg","max_allowed_weight_kg")}
+      {field("max_weight_kg","max_weight_kg")}
+      {field("default_breakpoint","default_breakpoint")}
+      <div className="md:col-span-3 border-t pt-2 text-xs text-gray-500">Curve params</div>
+      {field("p1","p1")}
+      {field("price_p1","price_p1")}
+      {field("p2","p2")}
+      {field("p2k","p2k")}
+      {field("p2m","p2m")}
+      {field("p3","p3")}
+      {field("p3k","p3k")}
+      {field("p3m","p3m")}
+    </div>
+
+    {/* Höger: grafen (uppdateras live från m) */}
+    <ModePricingChart config={m} />
+  </div>
+)}
+
 
         {tab==="transit" && (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
