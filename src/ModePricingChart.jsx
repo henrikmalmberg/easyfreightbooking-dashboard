@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import {
   ResponsiveContainer, LineChart, Line, CartesianGrid,
   XAxis, YAxis, Tooltip, ReferenceLine, Legend
@@ -10,7 +10,6 @@ function euro(n) {
   return `${v.toFixed(0)} €`;
 }
 
-// Samma piecewise-funktion som i vår kurvlogik
 function priceForWeight(cfg, w) {
   const p1   = Number(cfg?.p1) || 0;
   const pp1  = Number(cfg?.price_p1) || 0;
@@ -29,13 +28,27 @@ export default function ModePricingChart({
   config,
   minWeightDefault = 300,
 }) {
+  const boxRef = useRef(null);
+  const [boxW, setBoxW] = useState(0);
+
+  // Mät bredden på containern (för att undvika 0 px)
+  useEffect(() => {
+    const el = boxRef.current;
+    if (!el) return;
+
+    const ro = new ResizeObserver(() => setBoxW(el.offsetWidth || 0));
+    ro.observe(el);
+    // initvärde
+    setBoxW(el.offsetWidth || 0);
+    return () => ro.disconnect();
+  }, []);
+
   const [showPerKg, setShowPerKg] = useState(false);
   const [minW, setMinW] = useState(minWeightDefault);
   const [ftlPrice, setFtlPrice] = useState(() =>
     Math.round(priceForWeight(config, 24000)) || 0
   );
 
-  // 👉 Hooken ska ligga inne i komponenten
   useEffect(() => {
     setFtlPrice(Math.round(priceForWeight(config, 24000)) || 0);
   }, [config]);
@@ -54,12 +67,7 @@ export default function ModePricingChart({
     for (let i = 0; i <= steps; i++) {
       const w = Math.round(start + step * i);
       const price = priceForWeight(config, w);
-      arr.push({
-        w,
-        total: price,
-        perkg: price / Math.max(w, 1),
-        ftl: ftlPrice || null,
-      });
+      arr.push({ w, total: price, perkg: price / Math.max(w, 1), ftl: ftlPrice || null });
     }
     return arr;
   }, [config, minAllowed, maxAllowed, ftlPrice]);
@@ -67,8 +75,88 @@ export default function ModePricingChart({
   const yLabel = showPerKg ? "€/kg" : "Total €";
 
   return (
-    <div className="border rounded-lg p-3">
-      {/* ...resten oförändrat... */}
+    <div ref={boxRef} className="border rounded-lg p-3 min-w-[320px]">
+      <div className="flex items-end justify-between gap-3 mb-3">
+        <div>
+          <div className="font-semibold">Pricing preview</div>
+          <div className="text-xs text-gray-500">Dynamiskt från parametrarna</div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <label className="flex items-center gap-1">
+            <input type="checkbox" checked={showPerKg} onChange={(e) => setShowPerKg(e.target.checked)} />
+            Visa €/kg
+          </label>
+          <label className="flex items-center gap-1">
+            <span className="text-gray-500">Min weight</span>
+            <input
+              type="number"
+              className="border rounded px-2 py-1 w-24"
+              value={minW}
+              min={0}
+              onChange={(e) => setMinW(Number(e.target.value))}
+              title="Minsta vikt i x-axeln (påverkar inte config)"
+            />
+          </label>
+          <label className="flex items-center gap-1">
+            <span className="text-gray-500">FTL pris (simulering)</span>
+            <input
+              type="number"
+              className="border rounded px-2 py-1 w-28"
+              value={ftlPrice}
+              onChange={(e) => setFtlPrice(Number(e.target.value))}
+              title="Påverkar endast grafen, inte calculate/backend"
+            />
+          </label>
+        </div>
+      </div>
+
+      {/* Rendera grafen först när vi vet att containern har >0 px bredd */}
+      {boxW > 0 ? (
+        <div className="w-full h-[360px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={data} margin={{ top: 20, right: 16, left: 8, bottom: 8 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                dataKey="w"
+                type="number"
+                domain={[minAllowed, Math.max(minAllowed + 1, maxAllowed)]}
+                tickFormatter={(v) => `${v}`}
+                label={{ value: "Weight (kg)", position: "insideBottom", offset: -2 }}
+              />
+              <YAxis
+                tickFormatter={(v) => (showPerKg ? Number(v).toFixed(2) : Math.round(Number(v)))}
+                label={{ value: yLabel, angle: -90, position: "insideLeft" }}
+              />
+              <Tooltip
+                formatter={(value, name) => {
+                  if (name === "total") return [euro(value), "Total"];
+                  if (name === "perkg") return [`${Number(value).toFixed(2)} €/kg`, "€/kg"];
+                  if (name === "ftl") return [euro(value), "FTL (sim)"];
+                  return [value, name];
+                }}
+                labelFormatter={(w) => `Weight: ${w} kg`}
+              />
+              <Legend />
+              {p1 > 0 && <ReferenceLine x={p1} stroke="#888" strokeDasharray="4 4" label={{ value: "p1", position: "top" }} />}
+              {p2 > 0 && <ReferenceLine x={p2} stroke="#888" strokeDasharray="4 4" label={{ value: "p2", position: "top" }} />}
+              {!showPerKg && <Line type="monotone" dataKey="total" name="Total" dot={false} />}
+              {showPerKg  && <Line type="monotone" dataKey="perkg" name="€/kg" dot={false} />}
+              {Number.isFinite(ftlPrice) && ftlPrice > 0 && (
+                <ReferenceLine y={ftlPrice} stroke="#555" strokeDasharray="2 2" label={{ value: `FTL ${euro(ftlPrice)}`, position: "right" }} />
+              )}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <div className="h-[360px] flex items-center justify-center text-sm text-gray-500">
+          Measuring container…
+        </div>
+      )}
+
+      <div className="mt-2 text-xs text-gray-600">
+        Obs: FTL-priset här är en <strong>ren simulering</strong> i UI:t. Det sparas inte och används inte av <code>/calculate</code>.
+      </div>
     </div>
   );
 }
