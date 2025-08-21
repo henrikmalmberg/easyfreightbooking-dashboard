@@ -11,6 +11,8 @@ import BookingForm from "./BookingForm";
 import AllUsers from "./AllUsers";
 import AllOrganizations from "./AllOrganizations";
 import FAQ from "./FAQ";
+import ModePricingChart from "./ModePricingChart";
+npm i recharts
 
 // Valfri liten startsida (named export)
 function DashboardHome() {
