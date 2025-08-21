@@ -10,6 +10,10 @@ function euro(n) {
   return `${v.toFixed(0)} €`;
 }
 
+useEffect(() => {
+  setFtlPrice(Math.round(priceForWeight(config, 24000)) || 0);
+}, [config]);
+
 // Samma piecewise-funktion som i vår kurvlogik
 function priceForWeight(cfg, w) {
   const p1   = Number(cfg?.p1) || 0;
