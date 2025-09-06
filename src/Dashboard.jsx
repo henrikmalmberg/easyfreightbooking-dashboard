@@ -262,7 +262,7 @@ export function Layout({ children }) {
         >
           ☰ Menu
         </button>
-        <div className="mx-auto w-full max-w-[1200px]">
+        <div className="mx-auto w-full max-w-[1600px]">
           {children}
         </div>
       </main>
